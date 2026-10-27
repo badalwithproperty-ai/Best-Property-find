@@ -1,8 +1,8 @@
 {
-  "name": "property-find-crm-mobile",
+  "name": "team-work-crm-mobile",
   "version": "1.0.0",
   "private": true,
-  "description": "Android and iOS wrapper for PROPERTY FIND CRM",
+  "description": "Android and iOS wrapper for Team Work CRM",
   "scripts": {
     "copy:web": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});for(const f of ['index.html','manifest.json','service-worker.js'])fs.copyFileSync(f,'www/'+f);fs.mkdirSync('www/icons',{recursive:true});fs.copyFileSync('icons/icon.svg','www/icons/icon.svg')\"",
     "mobile:sync": "npm run copy:web && cap sync",
