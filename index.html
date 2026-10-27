@@ -639,7 +639,7 @@ async function importCSV(){
 
 function saveAppPin(){
  const pin=$('lockPin')?.value||'',confirmPin=$('lockPinConfirm')?.value||'';
- if(!/^\d{4,8}$/.test(pin)){alert('PIN 4 से 8 अंकों का होना चाहिए।');return}
+ if(!/^\d{6}$/.test(pin)){alert('कृपया ठीक 6 अंकों का PIN डालें।');return}
  if(pin!==confirmPin){alert('दोनों PIN एक जैसे नहीं हैं।');return}
  localStorage.setItem('twcrm_lock_pin',pin);localStorage.setItem('twcrm_lock_enabled','1');alert('App Lock PIN सेव हो गया।');render();
 }
