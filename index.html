@@ -319,8 +319,18 @@ function render(){
  }
 
  if(page==='backup'){
-  c.innerHTML='<div class="panel"><h2>Backup</h2><button onclick="backup()">Download JSON Backup</button>'+
-  '<p class="muted">अपना backup सुरक्षित रखें।</p></div>';return;
+  c.innerHTML='<div class="panel"><h2>Backup & Excel/CSV</h2><div class="actions">'+
+   '<button onclick="backup()">Download JSON Backup</button>'+
+   '<button class="secondary" onclick="exportAllCSV()">Export all data (CSV)</button></div>'+
+   '<p>CSV फ़ाइल Excel में खुलती है। हर module की CSV अलग डाउनलोड करें।</p>'+
+   '<div class="field"><label>Import CSV into</label><select id="importKind">'+
+   '<option value="customers">Customers & Leads</option><option value="inventory">Inventory</option>'+
+   '<option value="associates">Associates</option><option value="activities">Calls & Activities</option></select></div>'+
+   '<div class="field"><label>CSV file</label><input id="csvFile" type="file" accept=".csv,text/csv"></div>'+
+   '<button onclick="importCSV()">Import CSV</button>'+
+   '<p class="muted">Import करने से पहले backup डाउनलोड करें। CSV का पहला row column headers होना चाहिए। Import existing records को delete नहीं करता, नए records जोड़ता है।</p>'+
+   '<hr><h3>Follow-up notifications</h3><p class="muted">Notifications तभी आ सकती हैं जब यह वेबसाइट खुली हो और browser permission दी गई हो।</p>'+
+   '<button class="secondary" onclick="enableNotifications()">Enable browser notifications</button><span id="notifyState" class="muted"></span></div>';return;
  }
 
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
@@ -405,6 +415,98 @@ function backup(){
   setTimeout(()=>window.URL.revokeObjectURL(url),1000);
  }catch(e){alert('Backup error: '+e.message)}
 }
+
+function csvCell(v){
+ const s=String(v??'');
+ return '"'+s.replace(/"/g,'""')+'"';
+}
+function downloadText(filename,text,mime='text/csv;charset=utf-8;'){
+ const blob=new Blob(['\\uFEFF',text],{type:mime});
+ const url=window.URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>window.URL.revokeObjectURL(url),1200);
+}
+function exportAllCSV(){
+ const keys=['customers','inventory','associates','activities'];
+ keys.forEach((kind,i)=>{
+  const rows=db[kind]||[];
+  const headers=[...new Set(rows.flatMap(x=>Object.keys(x)))];
+  if(!headers.length){
+   const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','unit','type','size','location','rate','status'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
+   headers.push(...defaults);
+  }
+  const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\\r\\n');
+  downloadText('property-find-'+kind+'.csv',csv);
+ });
+}
+function parseCSV(text){
+ const rows=[];let row=[],field='',quoted=false;
+ text=text.replace(/^\\uFEFF/,'');
+ for(let i=0;i<text.length;i++){
+  const ch=text[i],next=text[i+1];
+  if(quoted){
+   if(ch==='"'&&next==='"'){field+='"';i++}
+   else if(ch==='"')quoted=false;
+   else field+=ch;
+  }else if(ch==='"')quoted=true;
+  else if(ch===','){row.push(field);field=''}
+  else if(ch==='\\n'){row.push(field);rows.push(row);row=[];field=''}
+  else if(ch!=='\\r')field+=ch;
+ }
+ if(field.length||row.length){row.push(field);rows.push(row)}
+ return rows.filter(r=>r.some(x=>x.trim()!==''));
+}
+async function importCSV(){
+ const kind=$('importKind')?.value,file=$('csvFile')?.files?.[0];
+ if(!kind||!file){alert('पहले module और CSV file चुनें।');return}
+ if(!confirm('CSV से records जोड़ें? Existing data delete नहीं होगा।'))return;
+ try{
+  const rows=parseCSV(await file.text());
+  if(rows.length<2)throw new Error('CSV में header और कम से कम एक data row होना चाहिए।');
+  const headers=rows[0].map(x=>x.trim());
+  if(!headers.includes('name')&&kind!=='inventory'&&kind!=='activities')throw new Error('CSV headers में name column होना चाहिए।');
+  const existing=new Set(db[kind].map(x=>String(x.id||'')));
+  const added=[];
+  rows.slice(1).forEach(cols=>{
+   const obj={};headers.forEach((h,i)=>{if(h)obj[h]=cols[i]??''});
+   if(!Object.values(obj).some(v=>String(v).trim()))return;
+   if(obj.id&&existing.has(String(obj.id)))delete obj.id;
+   if(kind==='customers')obj.status=normStatus(obj.status||'New');
+   if(kind==='activities'&&obj.count)obj.count=Number(obj.count)||1;
+   obj.id=obj.id||((window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2));
+   added.push(obj);
+  });
+  if(!added.length)throw new Error('Import करने के लिए कोई नया record नहीं मिला।');
+  db[kind].push(...added);
+  if(await save())alert(added.length+' records import हो गए।');
+ }catch(err){alert('CSV import failed: '+err.message)}
+}
+async function enableNotifications(){
+ if(!('Notification' in window)){alert('यह browser notifications support नहीं करता।');return}
+ try{
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted'){alert('Browser notification permission allow नहीं हुई।');return}
+  $('notifyState').textContent=' Notifications enabled while app is open.';
+  checkFollowupNotifications();
+  alert('Notifications enabled. Follow-up alerts चलाने के लिए वेबसाइट खुली रखें।');
+ }catch(e){alert('Notification error: '+e.message)}
+}
+const notifiedFollowups=new Set();
+function checkFollowupNotifications(){
+ if(!('Notification' in window)||Notification.permission!=='granted'||!user)return;
+ const now=new Date();
+ db.customers.forEach(x=>{
+  if(!x.followUpDate||!x.followUpTime||['Converted','Lost'].includes(normStatus(x.status)))return;
+  const when=new Date(x.followUpDate+'T'+x.followUpTime);
+  const key=String(x.id)+'|'+x.followUpDate+'|'+x.followUpTime;
+  if(when<=now&&now-when<24*60*60*1000&&!notifiedFollowups.has(key)){
+   new Notification('PROPERTY FIND · Follow-up due',{body:(x.name||'Customer')+' · '+(x.phone||'')+' · '+x.followUpTime});
+   notifiedFollowups.add(key);
+  }
+ });
+}
+setInterval(checkFollowupNotifications,60000);
+
 init().catch(e=>{setStatus('Startup error');message(e.message,true)});
 </script>
 </body>
