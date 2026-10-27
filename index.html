@@ -207,6 +207,21 @@ async function load(authUser){
    .select('data').eq('owner_id',workspaceOwnerId).maybeSingle();
   if(error)throw error;
   const saved=row?.data||{};
+  if(!isWorkspaceOwner){
+   const meta=authUser.user_metadata||{};
+   if(meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
+    const {data:existingRequest}=await sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle();
+    if(!existingRequest){
+     const {error:requestError}=await sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'});
+     if(requestError)console.warn('Join request:',requestError.message);
+    }
+    const {data:approved}=await sb.from('workspace_members').select('member_user_id').eq('workspace_owner_id',workspaceOwnerId).eq('member_user_id',authUser.id).maybeSingle();
+    if(!approved){
+     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+     setStatus('Awaiting approval');message('आपकी request Admin को भेज दी गई है। Approval तक CRM access नहीं मिलेगा।');return;
+    }
+   }
+  }
   if(isWorkspaceOwner){
    try{
     const {data:members,error:membersError}=await sb.from('workspace_members')
