@@ -163,7 +163,7 @@ async function init(){
   const sessionResult=await withTimeout(sb.auth.getSession(),'Session check');
   if(sessionResult.error)throw sessionResult.error;
   if(sessionResult.data.session)await load(sessionResult.data.session.user);
-  else {showLogin();message('Login करने के लिए email और password भरें।')}
+  else {showLogin();const hp=new URLSearchParams(location.hash.startsWith('#')?location.hash.slice(1):location.hash);const ae=hp.get('error_description')||hp.get('error');if(ae){message('Email confirmation error: '+ae+'। Supabase Auth में Site URL और Redirect URLs जाँचने होंगे।',true);history.replaceState(null,'',location.pathname+location.search)}else if(new URLSearchParams(location.search).get('confirmed')==='1'){message('Email confirmed. अब उसी email और password से Login करें।')}else message('Login करने के लिए email और password भरें।')}
   sb.auth.onAuthStateChange((event,session)=>{
    if(event==='SIGNED_OUT'){setTimeout(()=>showLogin(),0);return}
    if(session){
@@ -187,7 +187,7 @@ $('authForm').addEventListener('submit',async e=>{
   const email=$('email').value.trim(),password=$('password').value;
   let result;
   if(mode==='signup'){
-   const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await sb.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner}}});
+   const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await withTimeout(sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname+'?confirmed=1',data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner}}}),'Registration request');
   }else result=await withTimeout(sb.auth.signInWithPassword({email,password}),'Login request');
   if(result.error)throw result.error;
   if(mode==='signup'&&!result.data.session){
@@ -307,8 +307,8 @@ function statusOptions(selected){
 async function renderTeamAccess(c){
  if(!user||!sb){c.innerHTML='<div class="panel">Please login again.</div>';return;}
  c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Loading registration requests…</p></div>';
- const {data:reqs,error}=await sb.from('team_join_requests').select('*').eq('workspace_owner_id',user.id).order('created_at',{ascending:false});
- if(error){c.innerHTML='<div class="panel"><h2>Join Requests</h2><p>Requests load नहीं हुईं: '+escapeHTML(error.message)+'</p></div>';return;}
+ let reqs=[],error=null;try{const result=await withTimeout(sb.from('team_join_requests').select('*').eq('workspace_owner_id',user.id).order('created_at',{ascending:false}),'Team requests load');reqs=result.data||[];error=result.error}catch(e){error=e}
+ if(error){c.innerHTML='<div class="panel"><h2>Join Requests</h2><p class="err">Requests load नहीं हुईं: '+escapeHTML(error.message||String(error))+'</p><p>Admin account से login करें और Supabase में self-registration SQL policies लागू होने की पुष्टि करें।</p></div>';return;}
  const link=location.origin+location.pathname+'?join='+encodeURIComponent(user.id);
  c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">यह link team के साथ share करें। Members खुद register करेंगे और approval तक access नहीं मिलेगा।</p><input id="joinLink" readonly value="'+escapeHTML(link)+'"><button onclick="copyJoinLink()">Copy Registration Link</button></div>'+
  '<div class="panel"><h3>Join Requests</h3>'+tbl(['Name','Mobile','Email','Designation','Date','Status','Action'],(reqs||[]).map(r=>'<tr><td>'+escapeHTML(r.full_name)+'</td><td>'+escapeHTML(r.phone)+'</td><td>'+escapeHTML(r.email)+'</td><td>'+escapeHTML(r.designation)+'</td><td>'+fmtDate((r.created_at||'').slice(0,10))+'</td><td>'+escapeHTML(r.status)+'</td><td>'+(r.status==='pending'?'<button onclick="approveMember(\''+escapeHTML(r.id)+'\')">Approve</button> <button class="danger" onclick="rejectMember(\''+escapeHTML(r.id)+'\')">Reject</button>':'—')+'</td></tr>').join(''))+'</div>';
