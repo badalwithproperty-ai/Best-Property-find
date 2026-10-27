@@ -122,8 +122,34 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
 
 <section id="auth" class="wrap" style="max-width:480px">
   <div class="card">
-    <h2 id="authTitle">Login to Team Work CRM</h2>
-    <p class="muted">Email और password से login करें।</p>
+    <h2>Team Work CRM Login</h2>
+    <p class="muted">Referral ID और password से login करें या नई registration करें।</p>
+    <div class="tabs" style="margin:10px 0">
+      <button type="button" id="refLoginTab" onclick="setReferralMode('login')">Referral Login</button>
+      <button type="button" class="secondary" id="refRegisterTab" onclick="setReferralMode('register')">Register</button>
+      <button type="button" class="secondary" onclick="showLegacyLogin()">Old Email Login</button>
+    </div>
+    <form id="referralForm">
+      <div id="refLoginFields">
+        <div class="field"><label>6-digit Referral ID</label><input id="refLoginId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="username" placeholder="e.g. 123456"></div>
+        <div class="field"><label>Password</label><input id="refLoginPassword" type="password" minlength="8" autocomplete="current-password"></div>
+      </div>
+      <div id="refRegisterFields" class="hidden">
+        <div class="field"><label>Full name</label><input id="refFullName" autocomplete="name"></div>
+        <div class="field"><label>Mobile number (with country code)</label><input id="refPhone" type="tel" autocomplete="tel" placeholder="+919876543210"></div>
+        <div class="field"><label>Designation</label><select id="refDesignation"><option value="Associate">Associate</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Other</option></select></div>
+        <div class="field"><label>Sponsor's 6-digit Referral ID</label><input id="sponsorReferralId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Referral ID of the person who invited you"></div>
+        <div class="field"><label>Create password (minimum 8 characters)</label><input id="refRegisterPassword" type="password" minlength="8" autocomplete="new-password"></div>
+      </div>
+      <div id="otpFields" class="hidden">
+        <div class="field"><label>SMS OTP</label><input id="refOtp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter OTP"></div>
+      </div>
+      <div class="actions"><button id="refSubmit" type="submit">Login</button><button id="verifyOtpBtn" type="button" class="secondary hidden" onclick="verifyReferralOtp()">Verify OTP</button></div>
+    </form>
+    <div id="refMsg" class="msg hidden" role="status" aria-live="polite"></div>
+    <div id="legacyLogin" class="hidden">
+    <h2 id="authTitle">Old Email Login</h2>
+    <p class="muted">पुराने account के लिए email और password इस्तेमाल करें।</p>
     <form id="authForm">
       <div id="nameWrap" class="hidden"><div class="field"><label>Full name</label><input id="fullName" autocomplete="name"></div><div class="field"><label>Mobile number</label><input id="phone" type="tel" autocomplete="tel"></div><div class="field"><label>Designation</label><select id="designation"><option value="">Select designation</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Associate</option><option>Other</option></select></div><p class="muted">Admin के registration link से आएँ। Approval तक CRM access नहीं मिलेगा।</p></div>
       <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email"></div>
@@ -135,6 +161,7 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
     </form>
     <button type="button" class="secondary" id="resetBtn" onclick="resetPass()">Forgot password?</button>
     <div id="msg" class="msg hidden" role="status" aria-live="polite"></div>
+    </div>
   </div>
 </section>
 
@@ -199,6 +226,70 @@ function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
 function normStatus(s){return STATUSES.includes(s)?s:'New'}
 
+let referralMode='login';
+let pendingReferralPhone='';
+function referralMessage(text,isError=false){
+ const box=$('refMsg');box.textContent=text;box.classList.remove('hidden','err');if(isError)box.classList.add('err');
+}
+function setReferralMode(next){
+ referralMode=next;
+ $('refLoginFields').classList.toggle('hidden',next!=='login');
+ $('refRegisterFields').classList.toggle('hidden',next!=='register');
+ $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
+ $('refSubmit').classList.remove('hidden');$('refSubmit').textContent=next==='login'?'Login':'Send SMS OTP & Register';
+ $('refLoginTab').classList.toggle('secondary',next!=='login');
+ $('refRegisterTab').classList.toggle('secondary',next!=='register');
+ $('refMsg').classList.add('hidden');
+}
+function showLegacyLogin(){
+ $('legacyLogin').classList.remove('hidden');
+ $('referralForm').classList.add('hidden');
+ $('refLoginTab').classList.add('hidden');$('refRegisterTab').classList.add('hidden');
+}
+async function referralApi(payload,token){
+ const response=await fetch(SUPABASE_URL+'/functions/v1/referral-auth',{
+  method:'POST',
+  headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,...(token?{Authorization:'Bearer '+token}:{})},
+  body:JSON.stringify(payload)
+ });
+ const result=await response.json().catch(()=>({error:'Invalid server response'}));
+ if(!response.ok)throw new Error(result.error||'Request failed ('+response.status+')');
+ return result;
+}
+$('referralForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(authBusy)return;
+ authBusy=true;$('refSubmit').disabled=true;
+ try{
+  if(referralMode==='login'){
+   const result=await referralApi({action:'login',referral_id:$('refLoginId').value.trim(),password:$('refLoginPassword').value});
+   if(!sb)throw new Error('Supabase connection तैयार नहीं है। Refresh करें।');
+   const {error}=await sb.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});
+   if(error)throw error;
+   await load(result.user);
+  }else{
+   const phone=$('refPhone').value.trim().replace(/[\s()-]/g,'');
+   const result=await referralApi({action:'register',full_name:$('refFullName').value.trim(),phone,designation:$('refDesignation').value,sponsor_referral_id:$('sponsorReferralId').value.trim(),password:$('refRegisterPassword').value});
+   pendingReferralPhone=phone;
+   $('otpFields').classList.remove('hidden');$('verifyOtpBtn').classList.remove('hidden');
+   $('refSubmit').classList.add('hidden');
+   referralMessage('SMS OTP भेजने का अनुरोध सफल हुआ। आपका Referral ID: '+result.referral_id+' — इसे सुरक्षित रखें। अब OTP verify करें।');
+  }
+ }catch(err){referralMessage(err.message||'Request failed',true)}
+ finally{authBusy=false;$('refSubmit').disabled=false}
+});
+async function verifyReferralOtp(){
+ if(authBusy)return;
+ const phone=pendingReferralPhone||$('refPhone').value.trim().replace(/[\s()-]/g,'');
+ authBusy=true;$('verifyOtpBtn').disabled=true;
+ try{
+  const result=await referralApi({action:'verify_otp',phone,token:$('refOtp').value.trim()});
+  referralMessage('Mobile verify हो गया। Referral ID: '+result.referral_id+'. Main Admin approval का इंतज़ार करें; approval से पहले CRM access नहीं मिलेगा।');
+  $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
+  $('refSubmit').classList.remove('hidden');setReferralMode('login');
+ }catch(err){referralMessage(err.message||'OTP verification failed',true)}
+ finally{authBusy=false;$('verifyOtpBtn').disabled=false}
+}
+
 function toggleMode(){
  if(authBusy)return;
  mode=mode==='login'?'signup':'login';
@@ -213,7 +304,7 @@ function toggleMode(){
 
 async function init(){
  setTimeout(()=>$('splash')?.classList.add('hide'),1800);
- showLogin();setStatus('Loading CRM...');
+ showLogin();setReferralMode('login');setStatus('Loading CRM...');
  try{
   await ensureSupabaseLibrary();
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
