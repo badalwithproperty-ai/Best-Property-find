@@ -80,9 +80,18 @@ button:active{transform:scale(.98)}
 </style>
 </head>
 <body>
+<div id="splash" aria-label="Team Work CRM loading">
+  <div class="splash-inner">
+    <img class="splash-logo" src="./icons/icon.svg" alt="Team Work CRM logo">
+    <div class="splash-title">Team Work <span>CRM</span></div>
+    <div class="splash-tag">TOGETHER WE GROW</div>
+    <div class="splash-line"></div>
+    <div style="font-size:12px;color:#cce6d7;margin-top:7px">Loading your workspace…</div>
+  </div>
+</div>
 <header>
-  <div><b>Team Work CRM</b>
-    <div style="font-size:12px;color:#d7e7df">Real Estate CRM · Leads · Follow-ups · Reports</div>
+  <div class="brand"><img src="./icons/icon.svg" alt="Team Work CRM logo"><div><b>Team Work CRM</b>
+    <div class="brand-sub">TOGETHER WE GROW · LEADS · FOLLOW-UPS · REPORTS</div></div>
   </div>
   <div><span id="status">Connecting...</span>
     <button id="out" class="secondary hidden" onclick="logout()">Sign out</button>
@@ -188,6 +197,7 @@ function toggleMode(){
 }
 
 async function init(){
+ setTimeout(()=>$('splash')?.classList.add('hide'),1800);
  showLogin();setStatus('Loading CRM...');
  try{
   await ensureSupabaseLibrary();
