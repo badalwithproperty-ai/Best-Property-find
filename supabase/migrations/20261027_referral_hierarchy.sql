@@ -19,6 +19,9 @@ create table if not exists public.member_profiles (
   constraint member_profiles_not_self_sponsor check (sponsor_user_id is null or sponsor_user_id <> user_id)
 );
 
+create unique index if not exists member_profiles_phone_unique_idx
+  on public.member_profiles(phone);
+
 create index if not exists member_profiles_workspace_idx
   on public.member_profiles(workspace_owner_id);
 create index if not exists member_profiles_sponsor_idx
