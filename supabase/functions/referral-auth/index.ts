@@ -5,7 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const cors = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://badalwithproperty-ai.github.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       let referralId = "";
       let inserted = false;
       for (let attempt = 0; attempt < 12 && !inserted; attempt++) {
-        referralId = String(100000 + Math.floor(Math.random() * 900000));
+        referralId = String(100000 + crypto.getRandomValues(new Uint32Array(1))[0] % 900000);
         const { error: insertError } = await admin.from("member_profiles").insert({
           user_id: created.user.id,
           workspace_owner_id: sponsor.workspace_owner_id,
