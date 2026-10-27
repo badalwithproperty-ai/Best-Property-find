@@ -132,22 +132,33 @@ function toggleMode(){
 }
 
 async function init(){
- if(!window.supabase){setStatus('Library error');return}
- sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
- });
- setStatus('Checking session...');
- const {data,error}=await sb.auth.getSession();
- if(error){setStatus('Session error');message(error.message,true);return}
- if(data.session)await load(data.session.user);else showLogin();
- sb.auth.onAuthStateChange((event,session)=>{
-  setTimeout(()=>{
+ showLogin();
+ if(!window.supabase){setStatus('Library error');message('Supabase library load नहीं हुई। Internet connection जाँचें और Refresh करें।',true);return}
+ try{
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  setStatus('Checking session...');
+  const sessionResult=await Promise.race([
+   sb.auth.getSession(),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Session check timed out')),12000))
+  ]);
+  if(sessionResult.error)throw sessionResult.error;
+  if(sessionResult.data.session)await load(sessionResult.data.session.user);
+  else {showLogin();message('Login करने के लिए email और password भरें।')}
+  sb.auth.onAuthStateChange((event,session)=>{
+   if(event==='SIGNED_OUT'){setTimeout(()=>showLogin(),0);return}
    if(session){
-    if(user&&user.id===session.user.id&&!$('app').classList.contains('hidden'))return;
-    load(session.user);
-   }else showLogin();
-  },0);
- });
+    setTimeout(()=>{
+     if(user&&user.id===session.user.id&&!$('app').classList.contains('hidden'))return;
+     if(!loading)load(session.user);
+    },0);
+   }
+  });
+ }catch(err){
+  showLogin();setStatus('Connection issue');
+  message('CRM connection error: '+(err?.message||'Unknown error')+'. Internet जाँचें और Refresh करें।',true);
+ }
 }
 
 $('authForm').addEventListener('submit',async e=>{
