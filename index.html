@@ -1,30 +1,699 @@
+
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PROPERTY FIND CRM</title>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROPERTY FIND CRM</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f7f4;color:#17251f;font:16px system-ui,Arial}header{background:#123c32;color:white;padding:16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:3px solid #d6b36a}.wrap{max-width:1100px;margin:auto;padding:18px}.card,.panel,.stat{background:white;border:1px solid #dce5df;border-radius:14px;padding:18px;margin:10px 0}button{border:0;border-radius:9px;padding:10px 14px;background:#1d6a52;color:white;font-weight:650;cursor:pointer}button:disabled{opacity:.5}.secondary{background:#e7eee9;color:#123c32}.danger{background:#fff0ee;color:#b42318}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd8d0;border-radius:8px;font:inherit}.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}.hidden{display:none!important}.msg{padding:10px;background:#edf4f0;border-radius:8px;margin-top:10px;overflow-wrap:anywhere}.err{background:#fff0ee;color:#b42318}.tabs,.actions{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{margin:0}.stat small{display:block;color:#64736c}.stat strong{font-size:25px}.tablewrap{overflow:auto;background:white;border:1px solid #dce5df;border-radius:10px}table{border-collapse:collapse;width:100%;min-width:650px}td,th{text-align:left;padding:11px;border-bottom:1px solid #e5ece7}th{background:#eef4f0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.modalback{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:14px}.modal{background:white;border-radius:14px;padding:18px;width:min(700px,100%);max-height:90vh;overflow:auto}.muted{color:#64736c;font-size:13px}@media(max-width:650px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.wrap{padding:12px}}
-</style></head><body>
-<header><div><b>PROPERTY FIND</b><div style="font-size:12px;color:#d7e7df">Real Estate CRM · Leads • Inventory • Follow-ups</div></div><div><span id="status">Not signed in</span> <button id="out" class="secondary hidden" onclick="logout()">Sign out</button></div></header>
-<section id="auth" class="wrap" style="max-width:480px"><div class="card"><h2 id="authTitle">Login to PROPERTY FIND</h2><p class="muted">Email और password से login करें।</p><form id="authForm"><div id="nameWrap" class="field hidden"><label>Full name</label><input id="fullName"></div><div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" minlength="6" required autocomplete="current-password"></div><div class="actions"><button id="submit" type="submit">Login</button><button type="button" class="secondary" id="modeBtn" onclick="toggleMode()">Create account</button></div></form><button class="secondary" onclick="resetPass()">Forgot password?</button><div id="msg" class="msg hidden"></div><p class="muted">Email confirmation enabled हो तो signup के बाद email link खोलकर login करें।</p></div></section>
-<main id="app" class="wrap hidden"><h1 id="welcome">Dashboard</h1><div class="tabs"><button onclick="page='dashboard';render()">Dashboard</button><button onclick="page='customers';render()">Customers</button><button onclick="page='inventory';render()">Inventory</button><button onclick="page='associates';render()">Associates</button><button onclick="page='activities';render()">Calls & Follow-ups</button><button onclick="page='backup';render()">Backup</button></div><div id="content"></div></main><div id="modal"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const URL=''https://gevdyoshdxquxxavchyb.supabase.co', KEY='sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
-let sb=null,user=null,mode='login',page='dashboard',db={customers:[],inventory:[],associates:[],activities:[]};
-const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function message(s,err=false){$('msg').textContent=s;$('msg').classList.remove('hidden','err');if(err)$('msg').classList.add('err')}
-function toggleMode(){mode=mode==='login'?'signup':'login';$('authTitle').textContent=mode==='login'?'Login to PROPERTY FIND':'Create account';$('submit').textContent=mode==='login'?'Login':'Create account';$('modeBtn').textContent=mode==='login'?'Create account':'Back to Login';$('nameWrap').classList.toggle('hidden',mode==='login');$('fullName').required=mode==='signup';$('msg').classList.add('hidden')}
-async function init(){if(!window.supabase){message('Supabase library load नहीं हुई। Internet चालू करके refresh करें।',true);return}sb=window.supabase.createClient(URL,KEY);const {data,error}=await sb.auth.getSession();if(error)message(error.message,true);if(data.session)await load(data.session.user);sb.auth.onAuthStateChange((e,s)=>{if(s)load(s.user);else showLogin()})}
-$('authForm').addEventListener('submit',async e=>{e.preventDefault();if(!sb){message('Connection तैयार नहीं है। Page refresh करें।',true);return}$('submit').disabled=true;try{let r;if(mode==='signup')r=await sb.auth.signUp({email:$('email').value.trim(),password:$('password').value,options:{data:{full_name:$('fullName').value.trim()}}});else r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;if(mode==='signup'&&!r.data.session)message('Account request बन गई है। Email confirmation link खोलें, फिर login करें।');else message('Login successful…')}catch(e){message(e.message||String(e),true)}finally{$('submit').disabled=false}});
-async function resetPass(){if(!sb)return message('Connection तैयार नहीं है।',true);if(!$('email').value.trim())return message('पहले email भरें।',true);const {error}=await sb.auth.resetPasswordForEmail($('email').value.trim(),{redirectTo:location.href});message(error?error.message:'यदि account है, तो reset link भेज दिया जाएगा।',!!error)}
-function showLogin(){$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');$('status').textContent='Not signed in'}
-async function logout(){await sb.auth.signOut();showLogin()}
-async function load(u){user=u;$('status').textContent='Connecting…';try{const {data,error}=await sb.from('workspace_state').select('data').eq('owner_id',u.id).maybeSingle();if(error)throw error;db=data?.data||{customers:[],inventory:[],associates:[],activities:[]};for(const k of ['customers','inventory','associates','activities'])if(!Array.isArray(db[k]))db[k]=[];$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');$('welcome').textContent='Workspace · '+u.email;$('status').textContent='Cloud connected';render()}catch(e){showLogin();message('Login हुआ लेकिन cloud database error: '+e.message+' — SQL setup और RLS जाँचें।',true)}}
-async function save(){if(!user)return;const {error}=await sb.from('workspace_state').upsert({owner_id:user.id,data:db,updated_at:new Date().toISOString()},{onConflict:'owner_id'});if(error){alert('Cloud save failed: '+error.message);return}$('status').textContent='Cloud synced';render()}
-function tbl(heads,rows){return '<div class="tablewrap"><table><thead><tr>'+heads.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+(rows||'<tr><td colspan="'+heads.length+'">अभी कोई रिकॉर्ड नहीं है। Add New दबाएँ।</td></tr>')+'</tbody></table></div>'}
-function render(){let c=$('content');if(page==='dashboard'){c.innerHTML='<div class="stats">'+[['Customers',db.customers.length],['Inventory',db.inventory.length],['Associates',db.associates.length],['Calls',db.activities.filter(x=>x.type==='Call').reduce((n,x)=>n+Number(x.count||1),0)]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('')+'</div><div class="panel"><h3>Recent Customers</h3>'+tbl(['Name','Phone','Requirement','Status'],db.customers.slice(-8).reverse().map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.phone)+'</td><td>'+esc(x.requirement)+'</td><td>'+esc(x.status||'New Lead')+'</td></tr>').join(''))+'</div>';return}
-if(page==='backup'){c.innerHTML='<div class="panel"><h2>Backup</h2><button onclick="backup()">Download JSON Backup</button><p class="muted">दूसरे device पर same account से login करने पर cloud data दिखना चाहिए।</p></div>';return}
-const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Follow-ups'};const config={customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status']],inventory:[['project','Project'],['unit','Plot/Flat No.'],['type','Type'],['size','Size'],['location','Location'],['rate','Sale Rate'],['status','Status']],associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity'],['count','Call count'],['notes','Notes']]};c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+tbl(config[page].map(x=>x[1]).concat(['Action']),db[page].map(x=>'<tr>'+config[page].map(f=>'<td>'+esc(x[f[0]])+'</td>').join('')+'<td><button class="small secondary" onclick="editRecord(\''+page+'\',\''+x.id+'\')">Edit</button> <button class="small danger" onclick="del(\''+page+'\',\''+x.id+'\')">Delete</button></td></tr>').join(''))}
-function editRecord(kind,id){let old=id?db[kind].find(x=>x.id===id)||{}:{},labels={customers:[['name','Customer name'],['phone','Phone'],['email','Email'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status']],inventory:[['project','Project'],['unit','Plot/Flat no.'],['type','Type'],['size','Size'],['location','Location'],['rate','Sale rate'],['status','Status']],associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]};let fs=labels[kind];$('modal').innerHTML='<div class="modalback" onclick="if(event.target===this)this.remove()"><div class="modal"><h2>'+(id?'Edit':'Add')+' record</h2><form id="recForm"><div class="grid">'+fs.map(f=>'<div class="field"><label>'+f[1]+'</label><input name="'+f[0]+'" value="'+esc(old[f[0]]??(f[0]==='date'?new Date().toISOString().slice(0,10):f[0]==='count'?1:''))+'" '+(['name','phone','project','unit'].includes(f[0])?'required':'')+'></div>').join('')+'</div><div class="actions"><button>Save</button><button type="button" class="secondary" onclick="$(\'modal\').innerHTML=\'\'">Cancel</button></div></form></div></div>'; $('recForm').onsubmit=async e=>{e.preventDefault();let v=Object.fromEntries(new FormData(e.target).entries());if(kind==='activities')v.count=Number(v.count||1);if(id)Object.assign(old,v);else db[kind].push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),...v});$('modal').innerHTML='';await save()}}
-async function del(kind,id){if(confirm('यह record delete करें?')){db[kind]=db[kind].filter(x=>x.id!==id);await save()}}
-function backup(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='property-find-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-init().catch(e=>message(e.message,true));
-</script></body></html>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f7f4;color:#17251f;font:16px system-ui,Arial}
+header{background:#123c32;color:white;padding:16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:3px solid #d6b36a}
+.wrap{max-width:1100px;margin:auto;padding:18px}
+.card,.panel,.stat{background:white;border:1px solid #dce5df;border-radius:14px;padding:18px;margin:10px 0}
+button{border:0;border-radius:9px;padding:10px 14px;background:#1d6a52;color:white;font-weight:650;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+.secondary{background:#e7eee9;color:#123c32}
+.danger{background:#fff0ee;color:#b42318}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd8d0;border-radius:8px;font:inherit}
+.field{margin:12px 0}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+.hidden{display:none!important}
+.msg{padding:10px;background:#edf4f0;border-radius:8px;margin-top:10px;overflow-wrap:anywhere;white-space:pre-wrap}
+.err{background:#fff0ee;color:#b42318}
+.tabs,.actions{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{margin:0}
+.stat small{display:block;color:#64736c}
+.stat strong{font-size:25px}
+.tablewrap{overflow:auto;background:white;border:1px solid #dce5df;border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:650px}
+td,th{text-align:left;padding:11px;border-bottom:1px solid #e5ece7}
+th{background:#eef4f0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.modalback{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:14px;z-index:10}
+.modal{background:white;border-radius:14px;padding:18px;width:min(700px,100%);max-height:90vh;overflow:auto}
+.muted{color:#64736c;font-size:13px}
+.pagehead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.small{padding:7px 10px;font-size:13px}
+@media(max-width:650px){
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .grid{grid-template-columns:1fr}
+ .wrap{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <b>PROPERTY FIND</b>
+    <div style="font-size:12px;color:#d7e7df">
+      Real Estate CRM · Leads · Inventory · Follow-ups
+    </div>
+  </div>
+  <div>
+    <span id="status">Connecting...</span>
+    <button id="out" class="secondary hidden" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<section id="auth" class="wrap" style="max-width:480px">
+  <div class="card">
+    <h2 id="authTitle">Login to PROPERTY FIND</h2>
+    <p class="muted">Email और password से login करें।</p>
+
+    <form id="authForm">
+      <div id="nameWrap" class="field hidden">
+        <label>Full name</label>
+        <input id="fullName" autocomplete="name">
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input id="email" type="email" required autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input id="password" type="password" minlength="6"
+               required autocomplete="current-password">
+      </div>
+
+      <div class="actions">
+        <button id="submit" type="submit">Login</button>
+        <button type="button" class="secondary" id="modeBtn"
+                onclick="toggleMode()">Create account</button>
+      </div>
+    </form>
+
+    <button type="button" class="secondary" id="resetBtn"
+            onclick="resetPass()">Forgot password?</button>
+
+    <div id="msg" class="msg hidden" role="status" aria-live="polite"></div>
+
+    <p class="muted">
+      Email confirmation enabled हो तो signup के बाद email link खोलकर login करें।
+    </p>
+  </div>
+</section>
+
+<main id="app" class="wrap hidden">
+  <h1 id="welcome">Dashboard</h1>
+
+  <div class="tabs">
+    <button onclick="goPage('dashboard')">Dashboard</button>
+    <button onclick="goPage('customers')">Customers</button>
+    <button onclick="goPage('inventory')">Inventory</button>
+    <button onclick="goPage('associates')">Associates</button>
+    <button onclick="goPage('activities')">Calls & Follow-ups</button>
+    <button onclick="goPage('backup')">Backup</button>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<div id="modal"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+/* Supabase configuration */
+const SUPABASE_URL = 'https://gevdyoshdxquxxavchyb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
+
+let sb = null;
+let user = null;
+let mode = 'login';
+let page = 'dashboard';
+let authBusy = false;
+let loading = false;
+let saveBusy = false;
+
+let db = {
+  customers: [],
+  inventory: [],
+  associates: [],
+  activities: []
+};
+
+const $ = id => document.getElementById(id);
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+
+function message(text, isError = false) {
+  const box = $('msg');
+  box.textContent = text;
+  box.classList.remove('hidden', 'err');
+  if (isError) box.classList.add('err');
+}
+
+function hideMessage() {
+  $('msg').classList.add('hidden');
+}
+
+function setStatus(text) {
+  $('status').textContent = text;
+}
+
+function goPage(nextPage) {
+  page = nextPage;
+  render();
+}
+
+function toggleMode() {
+  if (authBusy) return;
+
+  mode = mode === 'login' ? 'signup' : 'login';
+
+  $('authTitle').textContent =
+    mode === 'login' ? 'Login to PROPERTY FIND' : 'Create account';
+
+  $('submit').textContent =
+    mode === 'login' ? 'Login' : 'Create account';
+
+  $('modeBtn').textContent =
+    mode === 'login' ? 'Create account' : 'Back to Login';
+
+  $('nameWrap').classList.toggle('hidden', mode === 'login');
+  $('fullName').required = mode === 'signup';
+  $('password').autocomplete =
+    mode === 'login' ? 'current-password' : 'new-password';
+
+  hideMessage();
+}
+
+async function init() {
+  if (!window.supabase) {
+    setStatus('Library error');
+    message(
+      'Supabase library लोड नहीं हुई। Internet जाँचें और पेज refresh करें।',
+      true
+    );
+    return;
+  }
+
+  sb = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
+
+  setStatus('Checking session...');
+
+  const {data, error} = await sb.auth.getSession();
+
+  if (error) {
+    setStatus('Session error');
+    message('Session error: ' + error.message, true);
+    return;
+  }
+
+  if (data.session) {
+    await load(data.session.user);
+  } else {
+    showLogin();
+  }
+
+  /*
+   * Auth changes are handled asynchronously so that database
+   * operations do not run directly inside the auth callback.
+   */
+  sb.auth.onAuthStateChange((event, session) => {
+    setTimeout(() => {
+      if (session) {
+        if (user && user.id === session.user.id &&
+            !$('app').classList.contains('hidden')) {
+          return;
+        }
+        load(session.user);
+      } else {
+        showLogin();
+      }
+    }, 0);
+  });
+}
+
+$('authForm').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  if (authBusy) return;
+
+  if (!sb) {
+    message('Supabase connection तैयार नहीं है। पेज refresh करें।', true);
+    return;
+  }
+
+  const email = $('email').value.trim();
+  const password = $('password').value;
+
+  if (!email || !password) {
+    message('Email और password भरें।', true);
+    return;
+  }
+
+  authBusy = true;
+  $('submit').disabled = true;
+  $('modeBtn').disabled = true;
+  $('resetBtn').disabled = true;
+
+  try {
+    let result;
+
+    if (mode === 'signup') {
+      result = await sb.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: $('fullName').value.trim()
+          }
+        }
+      });
+    } else {
+      result = await sb.auth.signInWithPassword({
+        email,
+        password
+      });
+    }
+
+    if (result.error) throw result.error;
+
+    if (mode === 'signup' && !result.data.session) {
+      message(
+        'Account request बन गई है। अपने email में confirmation link खोलें, फिर Login करें।'
+      );
+    } else if (result.data.session) {
+      message('Login successful. Dashboard लोड हो रहा है...');
+      await load(result.data.session.user);
+    } else {
+      message('Authentication request पूरी हुई। अपना email जाँचें।');
+    }
+
+  } catch (error) {
+    message(
+      'Login / signup error: ' +
+      (error.message || String(error)),
+      true
+    );
+  } finally {
+    authBusy = false;
+    $('submit').disabled = false;
+    $('modeBtn').disabled = false;
+    $('resetBtn').disabled = false;
+  }
+});
+
+async function resetPass() {
+  if (!sb) {
+    message('Supabase connection तैयार नहीं है। Refresh करें।', true);
+    return;
+  }
+
+  const email = $('email').value.trim();
+
+  if (!email) {
+    message('पहले Email भरें।', true);
+    $('email').focus();
+    return;
+  }
+
+  $('resetBtn').disabled = true;
+
+  try {
+    const redirectURL = location.origin + location.pathname;
+
+    const {error} = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectURL
+    });
+
+    if (error) throw error;
+
+    message(
+      'यदि इस email का account है, तो password reset link भेज दिया जाएगा।'
+    );
+  } catch (error) {
+    message('Password reset error: ' + error.message, true);
+  } finally {
+    $('resetBtn').disabled = false;
+  }
+}
+
+function showLogin() {
+  user = null;
+  loading = false;
+
+  $('app').classList.add('hidden');
+  $('auth').classList.remove('hidden');
+  $('out').classList.add('hidden');
+
+  setStatus('Not signed in');
+}
+
+async function logout() {
+  if (!sb) return;
+
+  try {
+    const {error} = await sb.auth.signOut();
+    if (error) throw error;
+    showLogin();
+    message('आप सफलतापूर्वक sign out हो गए हैं।');
+  } catch (error) {
+    alert('Sign out error: ' + error.message);
+  }
+}
+
+async function load(authUser) {
+  if (!sb || !authUser) return;
+  if (loading) return;
+
+  loading = true;
+  user = authUser;
+  setStatus('Connecting to cloud...');
+
+  try {
+    const {data: row, error} = await sb
+      .from('workspace_state')
+      .select('data')
+      .eq('owner_id', authUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const saved = row && row.data ? row.data : {};
+
+    db = {
+      customers: Array.isArray(saved.customers) ? saved.customers : [],
+      inventory: Array.isArray(saved.inventory) ? saved.inventory : [],
+      associates: Array.isArray(saved.associates) ? saved.associates : [],
+      activities: Array.isArray(saved.activities) ? saved.activities : []
+    };
+
+    $('auth').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('out').classList.remove('hidden');
+    $('welcome').textContent = 'Workspace · ' + (authUser.email || '');
+    setStatus('Cloud connected');
+
+    render();
+
+  } catch (error) {
+    user = null;
+    $('app').classList.add('hidden');
+    $('auth').classList.remove('hidden');
+    $('out').classList.remove('hidden');
+
+    setStatus('Database error');
+
+    message(
+      'Login हुआ, लेकिन cloud database error आया: ' +
+      error.message +
+      '. workspace_state table, owner_id और RLS policies जाँचें।',
+      true
+    );
+  } finally {
+    loading = false;
+  }
+}
+
+async function save() {
+  if (!user || !sb) {
+    message('डेटा सेव करने के लिए पहले Login करें।', true);
+    return;
+  }
+
+  if (saveBusy) {
+    message('Save चल रहा है। कृपया एक क्षण रुकें।');
+    return;
+  }
+
+  saveBusy = true;
+  setStatus('Saving to cloud...');
+
+  try {
+    const {error} = await sb
+      .from('workspace_state')
+      .upsert({
+        owner_id: user.id,
+        data: db,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'owner_id'
+      });
+
+    if (error) throw error;
+
+    setStatus('Cloud synced');
+    render();
+
+  } catch (error) {
+    setStatus('Save failed');
+    alert('Cloud save failed: ' + error.message);
+  } finally {
+    saveBusy = false;
+  }
+}
+
+function tbl(headers, rows) {
+  const body = rows ||
+    '<tr><td colspan="' + headers.length +
+    '">अभी कोई रिकॉर्ड नहीं है। Add New दबाएँ।</td></tr>';
+
+  return '<div class="tablewrap"><table><thead><tr>' +
+    headers.map(value => '<th>' + escapeHTML(value) + '</th>').join('') +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
+function render() {
+  const container = $('content');
+  if (!container) return;
+
+  if (page === 'dashboard') {
+    const totalCalls = db.activities
+      .filter(item => item.type === 'Call')
+      .reduce((sum, item) => sum + Number(item.count || 1), 0);
+
+    container.innerHTML =
+      '<div class="stats">' +
+      [
+        ['Customers', db.customers.length],
+        ['Inventory', db.inventory.length],
+        ['Associates', db.associates.length],
+        ['Calls', totalCalls]
+      ].map(item =>
+        '<div class="stat"><small>' + item[0] +
+        '</small><strong>' + item[1] + '</strong></div>'
+      ).join('') +
+      '</div><div class="panel"><h3>Recent Customers</h3>' +
+      tbl(
+        ['Name', 'Phone', 'Requirement', 'Status'],
+        db.customers.slice(-8).reverse().map(item =>
+          '<tr><td>' + escapeHTML(item.name) +
+          '</td><td>' + escapeHTML(item.phone) +
+          '</td><td>' + escapeHTML(item.requirement) +
+          '</td><td>' + escapeHTML(item.status || 'New Lead') +
+          '</td></tr>'
+        ).join('')
+      ) +
+      '</div>';
+    return;
+  }
+
+  if (page === 'backup') {
+    container.innerHTML =
+      '<div class="panel"><h2>Backup</h2>' +
+      '<button onclick="backup()">Download JSON Backup</button>' +
+      '<p class="muted">अपना backup सुरक्षित जगह पर रखें।</p></div>';
+    return;
+  }
+
+  const titles = {
+    customers: 'Customers & Leads',
+    inventory: 'Plot & Flat Inventory',
+    associates: 'Associates & Team',
+    activities: 'Calls & Follow-ups'
+  };
+
+  const config = {
+    customers: [
+      ['name','Name'], ['phone','Phone'], ['location','Location'],
+      ['requirement','Requirement'], ['budget','Budget'], ['status','Status']
+    ],
+    inventory: [
+      ['project','Project'], ['unit','Plot/Flat No.'], ['type','Type'],
+      ['size','Size'], ['location','Location'], ['rate','Sale Rate'],
+      ['status','Status']
+    ],
+    associates: [
+      ['name','Name'], ['phone','Phone'], ['email','Email'], ['role','Role']
+    ],
+    activities: [
+      ['date','Date'], ['associate','Associate'], ['customer','Customer'],
+      ['type','Activity'], ['count','Call count'], ['notes','Notes']
+    ]
+  };
+
+  const fields = config[page];
+  if (!fields) {
+    container.textContent = 'Page उपलब्ध नहीं है।';
+    return;
+  }
+
+  const rows = db[page].map(item =>
+    '<tr>' +
+    fields.map(field =>
+      '<td>' + escapeHTML(item[field[0]]) + '</td>'
+    ).join('') +
+    '<td><button class="small secondary" onclick="editRecord(\'' +
+    page + '\',\'' + escapeHTML(item.id) +
+    '\')">Edit</button> ' +
+    '<button class="small danger" onclick="del(\'' +
+    page + '\',\'' + escapeHTML(item.id) +
+    '\')">Delete</button></td></tr>'
+  ).join('');
+
+  container.innerHTML =
+    '<div class="pagehead"><h2>' + titles[page] + '</h2>' +
+    '<button onclick="editRecord(\'' + page + '\')">+ Add New</button>' +
+    '</div>' +
+    tbl(fields.map(field => field[1]).concat(['Action']), rows);
+}
+
+function editRecord(kind, id) {
+  const old = id
+    ? db[kind].find(item => item.id === id) || {}
+    : {};
+
+  const labels = {
+    customers: [
+      ['name','Customer name'], ['phone','Phone'], ['email','Email'],
+      ['location','Location'], ['requirement','Requirement'],
+      ['budget','Budget'], ['status','Status']
+    ],
+    inventory: [
+      ['project','Project'], ['unit','Plot/Flat no.'], ['type','Type'],
+      ['size','Size'], ['location','Location'], ['rate','Sale rate'],
+      ['status','Status']
+    ],
+    associates: [
+      ['name','Name'], ['phone','Phone'], ['email','Email'], ['role','Role']
+    ],
+    activities: [
+      ['date','Date'], ['associate','Associate'], ['customer','Customer'],
+      ['type','Activity type'], ['count','Call count'], ['notes','Notes']
+    ]
+  };
+
+  const fields = labels[kind];
+  if (!fields) return;
+
+  const inputs = fields.map(field => {
+    const key = field[0];
+    const defaultValue = key === 'date'
+      ? new Date().toISOString().slice(0,10)
+      : key === 'count' ? 1 : '';
+
+    const value = old[key] ?? defaultValue;
+    const required = ['name','phone','project','unit'].includes(key)
+      ? 'required' : '';
+
+    return '<div class="field"><label>' + escapeHTML(field[1]) +
+      '</label><input name="' + key + '" value="' +
+      escapeHTML(value) + '" ' + required + '></div>';
+  }).join('');
+
+  $('modal').innerHTML =
+    '<div class="modalback" id="modalBack">' +
+    '<div class="modal"><h2>' + (id ? 'Edit' : 'Add') +
+    ' record</h2><form id="recForm">' +
+    '<div class="grid">' + inputs + '</div>' +
+    '<div class="actions"><button type="submit">Save</button>' +
+    '<button type="button" class="secondary" id="cancelModal">Cancel</button>' +
+    '</div></form></div></div>';
+
+  $('cancelModal').onclick = () => {
+    $('modal').innerHTML = '';
+  };
+
+  $('modalBack').onclick = event => {
+    if (event.target === $('modalBack')) {
+      $('modal').innerHTML = '';
+    }
+  };
+
+  $('recForm').onsubmit = async event => {
+    event.preventDefault();
+
+    const values = Object.fromEntries(new FormData(event.target).entries());
+
+    if (kind === 'activities') {
+      values.count = Number(values.count || 1);
+    }
+
+    if (id) {
+      Object.assign(old, values);
+    } else {
+      const newId = window.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now()) + Math.random().toString(16).slice(2);
+
+      db[kind].push({id:newId, ...values});
+    }
+
+    $('modal').innerHTML = '';
+    await save();
+  };
+}
+
+async function del(kind, id) {
+  if (!confirm('यह record delete करें?')) return;
+
+  const original = db[kind];
+  db[kind] = original.filter(item => item.id !== id);
+  await save();
+}
+
+function backup() {
+  try {
+    const blob = new Blob(
+      [JSON.stringify(db, null, 2)],
+      {type:'application/json'}
+    );
+
+    const link = document.createElement('a');
+    const objectURL = window.URL.createObjectURL(blob);
+
+    link.href = objectURL;
+    link.download = 'property-find-backup.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => window.URL.revokeObjectURL(objectURL), 1000);
+  } catch (error) {
+    alert('Backup error: ' + error.message);
+  }
+}
+
+init().catch(error => {
+  setStatus('Startup error');
+  message('App start error: ' + error.message, true);
+});
+</script>
+</body>
+</html>
