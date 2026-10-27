@@ -1,7 +1,7 @@
 {
-  "name": "PROPERTY FIND CRM",
-  "short_name": "PROPERTY FIND",
-  "description": "Real estate leads, follow-ups, inventory and sales reports",
+  "name": "Team Work CRM",
+  "short_name": "Team Work CRM",
+  "description": "Team collaboration, real estate leads, follow-ups and sales reports",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
