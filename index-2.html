@@ -35,7 +35,7 @@ body:not(.authenticated) header,body:not(.authenticated) .layout{display:none!im
 <script>
 // Replace these two placeholders with values from Supabase Project Settings.
 const savedSupabaseConfig = (() => { try { return JSON.parse(localStorage.getItem('property_find_supabase_config') || '{}'); } catch (_) { return {}; } })();
-let SUPABASE_URL = savedSupabaseConfig.url || 'PASTE_YOUR_PROJECT_URL_HERE';
+let SUPABASE_URL = savedSupabaseConfig.url || 'https://gevdyoshdxquxxavchyb.supabase.co';
 let SUPABASE_PUBLISHABLE_KEY = savedSupabaseConfig.key || 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
 let supabaseClient = null, currentUser = null, authMode = 'login', cloudReady = false, saveTimer = null;
 const KEY='property_find_demo_v1';
