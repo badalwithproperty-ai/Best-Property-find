@@ -1,0 +1,19 @@
+{
+  "name": "PROPERTY FIND CRM",
+  "short_name": "PROPERTY FIND",
+  "description": "Real estate leads, follow-ups, inventory and sales reports",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f7f4",
+  "theme_color": "#123c32",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
