@@ -1,0 +1,20 @@
+{
+  "name": "property-find-crm-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android and iOS wrapper for PROPERTY FIND CRM",
+  "scripts": {
+    "copy:web": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});for(const f of ['index.html','manifest.json','service-worker.js'])fs.copyFileSync(f,'www/'+f);fs.mkdirSync('www/icons',{recursive:true});fs.copyFileSync('icons/icon.svg','www/icons/icon.svg')\"",
+    "mobile:sync": "npm run copy:web && cap sync",
+    "mobile:android": "npm run mobile:sync && cap open android",
+    "mobile:ios": "npm run mobile:sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
