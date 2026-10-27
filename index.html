@@ -87,7 +87,6 @@ th{background:#eef4f0}
 </main>
 <div id="modal"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 
@@ -115,6 +114,16 @@ function message(text,isError=false){
 function hideMessage(){$('msg').classList.add('hidden')}
 function setStatus(text){$('status').textContent=text}
 function withTimeout(promise,label='Supabase request',ms=12000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check internet and Supabase status.')),ms))])}
+function ensureSupabaseLibrary(){
+ if(window.supabase)return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';script.async=true;
+  const timer=setTimeout(()=>{script.remove();reject(new Error('Supabase library CDN load timed out. Try switching internet or open in Chrome.'))},10000);
+  script.onload=()=>{clearTimeout(timer);window.supabase?resolve():reject(new Error('Supabase library loaded but unavailable'))};
+  script.onerror=()=>{clearTimeout(timer);reject(new Error('Supabase library CDN failed to load. Internet/ad blocker may be blocking it.'))};
+  document.head.appendChild(script);
+ });
+}
 function goPage(p){page=p;render()}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
@@ -133,9 +142,9 @@ function toggleMode(){
 }
 
 async function init(){
- showLogin();
- if(!window.supabase){setStatus('Library error');message('Supabase library load नहीं हुई। Internet connection जाँचें और Refresh करें।',true);return}
+ showLogin();setStatus('Loading CRM...');
  try{
+  await ensureSupabaseLibrary();
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   });
