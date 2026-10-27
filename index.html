@@ -7,13 +7,13 @@
 <meta name="theme-color" content="#123c32">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PROPERTY FIND">
+<meta name="apple-mobile-web-app-title" content="Team Work CRM">
 <link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>PROPERTY FIND CRM</title>
+<title>Team Work CRM</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f3f7f4;color:#17251f;font:16px system-ui,Arial}
@@ -52,7 +52,7 @@ th{background:#eef4f0}
 </head>
 <body>
 <header>
-  <div><b>PROPERTY FIND</b>
+  <div><b>Team Work CRM</b>
     <div style="font-size:12px;color:#d7e7df">Real Estate CRM · Leads · Follow-ups · Reports</div>
   </div>
   <div><span id="status">Connecting...</span>
@@ -62,7 +62,7 @@ th{background:#eef4f0}
 
 <section id="auth" class="wrap" style="max-width:480px">
   <div class="card">
-    <h2 id="authTitle">Login to PROPERTY FIND</h2>
+    <h2 id="authTitle">Login to Team Work CRM</h2>
     <p class="muted">Email और password से login करें।</p>
     <form id="authForm">
       <div id="nameWrap" class="hidden"><div class="field"><label>Full name</label><input id="fullName" autocomplete="name"></div><div class="field"><label>Mobile number</label><input id="phone" type="tel" autocomplete="tel"></div><div class="field"><label>Designation</label><select id="designation"><option value="">Select designation</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Associate</option><option>Other</option></select></div><p class="muted">Admin के registration link से आएँ। Approval तक CRM access नहीं मिलेगा।</p></div>
@@ -149,7 +149,7 @@ function normStatus(s){return STATUSES.includes(s)?s:'New'}
 function toggleMode(){
  if(authBusy)return;
  mode=mode==='login'?'signup':'login';
- $('authTitle').textContent=mode==='login'?'Login to PROPERTY FIND':'Create account';
+ $('authTitle').textContent=mode==='login'?'Login to Team Work CRM':'Create account';
  $('submit').textContent=mode==='login'?'Login':'Create account';
  $('modeBtn').textContent=mode==='login'?'Create account':'Back to Login';
  $('nameWrap').classList.toggle('hidden',mode==='login');
@@ -495,7 +495,7 @@ function backup(){
  try{
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const url=window.URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='property-find-backup.json';
+  a.href=url;a.download='team-work-crm-backup.json';
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>window.URL.revokeObjectURL(url),1000);
  }catch(e){alert('Backup error: '+e.message)}
@@ -521,7 +521,7 @@ function exportAllCSV(){
    headers.push(...defaults);
   }
   const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');
-  downloadText('property-find-'+kind+'.csv',csv);
+  downloadText('team-work-crm-'+kind+'.csv',csv);
  });
 }
 function parseCSV(text){
@@ -585,7 +585,7 @@ function checkFollowupNotifications(){
   const when=new Date(x.followUpDate+'T'+x.followUpTime);
   const key=String(x.id)+'|'+x.followUpDate+'|'+x.followUpTime;
   if(when<=now&&now-when<24*60*60*1000&&!notifiedFollowups.has(key)){
-   new Notification('PROPERTY FIND · Follow-up due',{body:(x.name||'Customer')+' · '+(x.phone||'')+' · '+x.followUpTime});
+   new Notification('Team Work CRM · Follow-up due',{body:(x.name||'Customer')+' · '+(x.phone||'')+' · '+x.followUpTime});
    notifiedFollowups.add(key);
   }
  });
