@@ -98,7 +98,7 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
 .real-estate-hero:before{content:"";position:absolute;z-index:-1;right:-35px;bottom:-70px;width:310px;height:245px;background:linear-gradient(140deg,#d7efbd,#78b95e);clip-path:polygon(0 100%,0 45%,12% 45%,12% 24%,25% 24%,25% 40%,37% 40%,37% 9%,55% 9%,55% 34%,68% 34%,68% 0,83% 0,83% 45%,100% 45%,100% 100%);opacity:.23}
 .hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;color:#e8c65f;margin-bottom:9px}.hero-title{font-size:clamp(25px,4vw,37px);font-weight:850;line-height:1.05;letter-spacing:-.8px;margin:0 0 8px;color:#fff!important}.hero-subtitle{font-size:14px;color:#e1f1e5;max-width:570px;line-height:1.6}.hero-tagline{display:inline-flex;align-items:center;gap:8px;margin-top:15px;padding:8px 12px;border:1px solid #ffffff40;border-radius:9px;background:#ffffff10;font-size:12px;font-weight:750;letter-spacing:.4px}.hero-pill{display:inline-block;border-radius:30px;padding:5px 9px;background:#e3bd53;color:#173a2b;font-size:11px;font-weight:850;margin-bottom:14px}
 .workflow-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}.workflow-step{background:#fff;border:1px solid #dce7df;border-radius:14px;padding:13px;display:flex;align-items:center;gap:10px}.workflow-num{flex:0 0 32px;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#e7f2e8;color:#07583f;font-weight:850}.workflow-step b{display:block;font-size:13px;color:#164a34}.workflow-step small{display:block;color:#718176;font-size:11px;margin-top:3px}.section-kicker{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;font-weight:850;color:#718176;margin:18px 0 8px}
-@media(max-width:700px){.wrap{padding:12px}.real-estate-hero{padding:21px;min-height:205px;border-radius:18px}.real-estate-hero:before{right:-80px;opacity:.18}.workflow-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.workflow-step{padding:10px;gap:8px}.workflow-num{width:29px;height:29px;flex-basis:29px}.stat{padding:14px}.stat strong{font-size:25px}#app>h1{font-size:23px}.tabs{border-radius:13px}}
+.menu-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:13px;background:#fff;border:1px solid var(--crm-line);border-radius:16px;margin:10px 0 16px}.menu-panel button{text-align:left;min-height:44px}.menu-toggle{margin:8px 0}.setting-note{font-size:12px;color:#64736c;line-height:1.5}.lock-overlay{position:fixed;inset:0;z-index:10000;background:linear-gradient(140deg,#052f25,#08724d);display:flex;align-items:center;justify-content:center;padding:18px}.lock-card{background:white;border-radius:20px;padding:24px;width:min(390px,100%);box-shadow:0 18px 60px #001d1555}.lock-card h2{color:#07583f}@media(max-width:480px){.menu-panel{grid-template-columns:1fr}}@media(max-width:700px){.wrap{padding:12px}.real-estate-hero{padding:21px;min-height:205px;border-radius:18px}.real-estate-hero:before{right:-80px;opacity:.18}.workflow-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.workflow-step{padding:10px;gap:8px}.workflow-num{width:29px;height:29px;flex-basis:29px}.stat{padding:14px}.stat strong{font-size:25px}#app>h1{font-size:23px}.tabs{border-radius:13px}}
 </style>
 </head>
 <body>
@@ -140,18 +140,9 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
 
 <main id="app" class="wrap hidden">
   <h1 id="welcome">Dashboard</h1>
-  <div class="section-kicker">WORKSPACE NAVIGATION · FOLLOW EACH STAGE</div>
-  <div class="tabs">
-    <button onclick="goPage('dashboard')">🏠 Overview</button>
-    <button onclick="goPage('customers')">👥 Leads & Customers</button>
-    <button onclick="goPage('inventory')">🏡 Plot Inventory</button>
-    <button onclick="goPage('associates')">🤝 Associates</button>
-    <button onclick="goPage('activities')">📞 Calls & Activities</button>
-    <button onclick="goPage('followups')">📅 Follow-ups</button>
-    <button onclick="goPage('reports')">📊 Sales Reports</button>
-    <button onclick="goPage('team')">🎯 Team Performance</button>
-    <button onclick="goPage('teamaccess')">🔐 Team Access</button>
-    <button onclick="goPage('backup')">💾 Backup & Data</button>
+  <div class="pagehead menu-toggle"><div><div class="section-kicker">YOUR WORKSPACE</div><p class="muted">All CRM tools, settings and help in one menu.</p></div><button onclick="toggleMenu()" aria-expanded="false" id="menuButton">☰ Menu</button></div>
+  <div id="menuPanel" class="menu-panel hidden" aria-label="Main menu">
+    <button onclick="goPage('dashboard');toggleMenu(false)">🏠 Overview / Dashboard</button><button onclick="goPage('customers');toggleMenu(false)">👥 Leads & Customers</button><button onclick="goPage('inventory');toggleMenu(false)">🏡 Property Inventory</button><button onclick="goPage('associates');toggleMenu(false)">🤝 Associates</button><button onclick="goPage('activities');toggleMenu(false)">📞 Calls & Activities</button><button onclick="goPage('followups');toggleMenu(false)">📅 Follow-ups & Reminders</button><button onclick="goPage('reports');toggleMenu(false)">📊 Sales Reports</button><button onclick="goPage('team');toggleMenu(false)">🎯 Team Performance</button><button onclick="goPage('teamaccess');toggleMenu(false)">🔐 Team Access</button><button onclick="goPage('backup');toggleMenu(false)">💾 Backup & Data</button><button onclick="goPage('notifications');toggleMenu(false)">🔔 Notifications</button><button onclick="goPage('security');toggleMenu(false)">🔒 App Lock & Security</button><button onclick="goPage('contact');toggleMenu(false)">☎️ Contact & Support</button><button onclick="goPage('about');toggleMenu(false)">ℹ️ About this App</button>
   </div>
   <div id="content"></div>
 </main>
@@ -203,6 +194,7 @@ function ensureSupabaseLibrary(){
  });
 }
 function goPage(p){page=p;render()}
+function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);const b=$('menuButton');if(b){b.textContent=open?'✕ Close Menu':'☰ Menu';b.setAttribute('aria-expanded',String(open))}}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
 function normStatus(s){return STATUSES.includes(s)?s:'New'}
@@ -410,7 +402,20 @@ function render(){
   return;
  }
 
- if(page==='followups'){
+ if(page==='notifications'){
+ c.innerHTML='<div class="panel"><h2>🔔 Notifications & Reminders</h2><p>Enable browser notifications for follow-up reminders while the app is open.</p><div class="actions"><button onclick="enableNotifications()">Enable Notifications</button><button class="secondary" onclick="checkFollowupNotifications()">Check Follow-ups Now</button></div><p id="notifyState" class="muted">'+('Notification' in window?('Browser permission: '+Notification.permission):'This browser does not support notifications')+'</p><p class="setting-note">Browser notifications may not work when the app is closed. Reliable background alerts require a native push-notification service.</p><button class="secondary" onclick="goPage(\'followups\')">Open Follow-ups</button></div>';return;
+}
+if(page==='security'){
+ const enabled=localStorage.getItem('twcrm_lock_enabled')==='1';
+ c.innerHTML='<div class="panel"><h2>🔒 App Lock & Security</h2><p>Set a 4–8 digit PIN for a manual privacy lock.</p><div class="field"><label>New PIN (4–8 digits)</label><input id="lockPin" type="password" inputmode="numeric" maxlength="8" placeholder="Enter a PIN"></div><div class="field"><label>Confirm PIN</label><input id="lockPinConfirm" type="password" inputmode="numeric" maxlength="8" placeholder="Re-enter PIN"></div><div class="actions"><button onclick="saveAppPin()">Save / Update PIN</button><button class="secondary" onclick="lockApp()">Lock App Now</button><button class="danger" onclick="disableAppPin()">Disable App Lock</button></div><p class="muted">App lock status: <b>'+(enabled?'Enabled':'Not enabled')+'</b></p><p class="setting-note">Convenience privacy lock only, not encryption. It does not replace your account password or protect data stored outside this device.</p></div>';return;
+}
+if(page==='contact'){
+ c.innerHTML='<div class="panel"><h2>☎️ Contact & Support</h2><p>If you face an app issue, contact your app administrator/support team.</p><div class="field"><label>Support phone</label><p><b>Not configured yet</b></p><p class="muted">Add your official customer-care number before sharing the app.</p></div><div class="field"><label>Support email</label><p><b>Not configured yet</b></p><p class="muted">Add your official support email before publishing.</p></div><p class="setting-note">No contact details have been guessed. Share the official support phone and email to add them.</p></div>';return;
+}
+if(page==='about'){
+ c.innerHTML='<div class="panel"><h2>ℹ️ About Team Work CRM</h2><p>Manage customer enquiries, property inventory, associates, calls, follow-ups and sales reporting in one workspace.</p><div class="workflow-strip"><div class="workflow-step"><span class="workflow-num">01</span><div><b>Capture Leads</b><small>Record enquiries</small></div></div><div class="workflow-step"><span class="workflow-num">02</span><div><b>Manage Inventory</b><small>Track properties</small></div></div><div class="workflow-step"><span class="workflow-num">03</span><div><b>Follow Up</b><small>Stay organized</small></div></div><div class="workflow-step"><span class="workflow-num">04</span><div><b>Review Results</b><small>Reports & growth</small></div></div></div><p class="muted">Version: Web app / PWA build. Data access depends on account permissions and internet connection.</p></div>';return;
+}
+if(page==='followups'){
   const list=db.customers.filter(x=>x.followUpDate&&x.status!=='Converted'&&x.status!=='Lost')
    .slice().sort((a,b)=>(a.followUpDate||'').localeCompare(b.followUpDate||''));
   c.innerHTML='<div class="pagehead"><h2>Follow-up Reminders</h2><button onclick="goPage(\'customers\')">Manage Leads</button></div>'+
@@ -630,6 +635,25 @@ async function importCSV(){
   if(await save())alert(added.length+' records import हो गए।');
  }catch(err){alert('CSV import failed: '+err.message)}
 }
+
+function saveAppPin(){
+ const pin=$('lockPin')?.value||'',confirmPin=$('lockPinConfirm')?.value||'';
+ if(!/^\d{4,8}$/.test(pin)){alert('PIN 4 से 8 अंकों का होना चाहिए।');return}
+ if(pin!==confirmPin){alert('दोनों PIN एक जैसे नहीं हैं।');return}
+ localStorage.setItem('twcrm_lock_pin',pin);localStorage.setItem('twcrm_lock_enabled','1');alert('App Lock PIN सेव हो गया।');render();
+}
+function disableAppPin(){
+ if(localStorage.getItem('twcrm_lock_enabled')==='1'&&!verifyAppPin('App Lock बंद करने के लिए PIN डालें'))return;
+ localStorage.removeItem('twcrm_lock_pin');localStorage.removeItem('twcrm_lock_enabled');alert('App Lock बंद कर दिया गया।');render();
+}
+function verifyAppPin(title){const pin=prompt(title||'App unlock करने के लिए PIN डालें');if(pin===null)return false;if(pin!==localStorage.getItem('twcrm_lock_pin')){alert('गलत PIN।');return false}return true}
+function lockApp(){
+ if(localStorage.getItem('twcrm_lock_enabled')!=='1'){alert('पहले App Lock & Security में PIN सेट करें।');goPage('security');return}
+ const overlay=document.createElement('div');overlay.className='lock-overlay';overlay.id='appLockOverlay';
+ overlay.innerHTML='<div class="lock-card"><h2>🔒 Team Work CRM Locked</h2><p>अपना PIN डालकर ऐप खोलें।</p><div class="field"><label>PIN</label><input id="unlockPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div><button id="unlockBtn">Unlock App</button><p id="unlockError" class="err hidden">गलत PIN। दोबारा कोशिश करें।</p></div>';
+ document.body.appendChild(overlay);$('unlockBtn').onclick=()=>{if($('unlockPin').value===localStorage.getItem('twcrm_lock_pin'))overlay.remove();else $('unlockError').classList.remove('hidden')};$('unlockPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
+}
+
 async function enableNotifications(){
  if(!('Notification' in window)){alert('यह browser notifications support नहीं करता।');return}
  try{
