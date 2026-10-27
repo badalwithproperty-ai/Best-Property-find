@@ -1,0 +1,11 @@
+{
+  "appId": "com.propertyfind.crm",
+  "appName": "PROPERTY FIND CRM",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}
