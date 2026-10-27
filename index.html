@@ -198,38 +198,35 @@ async function load(authUser){
  if(!sb||!authUser||loading)return;
  loading=true;user=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
  try{
-  const signupMeta=authUser.user_metadata||{};
-  if(signupMeta.workspace_owner_id){workspaceOwnerId=signupMeta.workspace_owner_id;isWorkspaceOwner=false;}
+  const meta=authUser.user_metadata||{};
+  if(meta.workspace_owner_id){workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;}
+  let membership=null;
   try{
-   const {data:membership,error:memberError}=await sb.from('workspace_members')
-    .select('workspace_owner_id,member_user_id,role').eq('member_user_id',authUser.id).maybeSingle();
-   if(!memberError&&membership){workspaceOwnerId=membership.workspace_owner_id;isWorkspaceOwner=false;}
+   const {data,error}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role').eq('member_user_id',authUser.id).maybeSingle();
+   if(!error&&data){membership=data;workspaceOwnerId=data.workspace_owner_id;isWorkspaceOwner=false;}
   }catch(e){}
-  const {data:row,error}=await sb.from('workspace_state')
-   .select('data').eq('owner_id',workspaceOwnerId).maybeSingle();
-  if(error)throw error;
-  const saved=row?.data||{};
-  if(!isWorkspaceOwner){
-   const meta=authUser.user_metadata||{};
-   if(meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
-    const {data:existingRequest}=await sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle();
-    if(!existingRequest){
-     const {error:requestError}=await sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'});
-     if(requestError)console.warn('Join request:',requestError.message);
-    }
-    const {data:approved}=await sb.from('workspace_members').select('member_user_id').eq('workspace_owner_id',workspaceOwnerId).eq('member_user_id',authUser.id).maybeSingle();
-    if(!approved){
-     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
-     setStatus('Awaiting approval');message('आपकी request Admin को भेज दी गई है। Approval तक CRM access नहीं मिलेगा।');return;
-    }
+  if(!isWorkspaceOwner&&meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
+   const {data:existingRequest,error:lookupError}=await sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle();
+   if(lookupError)throw lookupError;
+   if(!existingRequest){
+    const {error:requestError}=await sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'});
+    if(requestError)throw requestError;
+   }
+   if(!membership){
+    user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+    setStatus('Awaiting approval');message(existingRequest?.status==='rejected'?'आपकी request reject हुई है। Admin से संपर्क करें।':'आपकी registration request Admin को भेज दी गई है। Approval तक CRM access नहीं मिलेगा।');return;
+   }
+   if(existingRequest?.status==='rejected'){
+    user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+    setStatus('Registration rejected');message('आपकी registration request reject हुई है। Admin से संपर्क करें।');return;
    }
   }
+  const {data:row,error}=await sb.from('workspace_state').select('data').eq('owner_id',workspaceOwnerId).maybeSingle();
+  if(error)throw error;
+  const saved=row?.data||{};
   if(isWorkspaceOwner){
-   try{
-    const {data:members,error:membersError}=await sb.from('workspace_members')
-     .select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id);
-    if(!membersError)teamMembers=members||[];
-   }catch(e){}
+   const {data:members,error:membersError}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id);
+   if(!membersError)teamMembers=members||[];
   }
   db={
    customers:Array.isArray(saved.customers)?saved.customers:[],
@@ -237,15 +234,11 @@ async function load(authUser){
    associates:Array.isArray(saved.associates)?saved.associates:[],
    activities:Array.isArray(saved.activities)?saved.activities:[]
   };
-  // पुराने records को पढ़ते समय नए fields की जरूरत नहीं होती।
-  $('auth').classList.add('hidden');$('app').classList.remove('hidden');
-  $('out').classList.remove('hidden');
+  $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
   setStatus('Cloud connected');render();
  }catch(err){
-  user=null;setStatus('Database error');
-  $('app').classList.add('hidden');$('auth').classList.remove('hidden');
-  $('out').classList.add('hidden');
+  user=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
   message('Cloud database error: '+err.message,true);
  }finally{loading=false}
 }
