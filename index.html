@@ -403,7 +403,7 @@ function render(){
  }
 
  if(page==='notifications'){
- c.innerHTML='<div class="panel"><h2>🔔 Notifications & Reminders</h2><p>Enable browser notifications for follow-up reminders while the app is open.</p><div class="actions"><button onclick="enableNotifications()">Enable Notifications</button><button class="secondary" onclick="checkFollowupNotifications()">Check Follow-ups Now</button></div><p id="notifyState" class="muted">'+('Notification' in window?('Browser permission: '+Notification.permission):'This browser does not support notifications')+'</p><p class="setting-note">Browser notifications may not work when the app is closed. Reliable background alerts require a native push-notification service.</p><button class="secondary" onclick="goPage(\'followups\')">Open Follow-ups</button></div>';return;
+ c.innerHTML='<div class="panel"><h2>🔔 Reminder Alarm & Notifications</h2><p>कॉल की तारीख और समय ग्राहक के Follow-up में सेव करें। CRM खुला रहने पर कॉल से <b>2 मिनट पहले</b> स्क्रीन notification और bell sound आएगा।</p><div class="actions"><button onclick="enableNotifications()">🔔 Enable Reminder Alarm</button><button class="secondary" onclick="checkFollowupNotifications()">Test / Check Now</button><button class="secondary" onclick="goPage(\'followups\')">📅 View All Reminders</button></div><p id="notifyState" class="muted">'+('Notification' in window?('Browser permission: '+Notification.permission):'यह browser notifications support नहीं करता')+'</p><div class="card"><h3>⚙️ फोन में ये सेटिंग रखें</h3><ol><li>Enable Reminder Alarm दबाकर permission Allow करें।</li><li>फोन की Settings में Chrome/Team Work CRM notifications Allow करें और volume चालू रखें।</li><li>Reminder समय पर पाने के लिए app/website खुली रखें; battery saver इसे रोक सकता है।</li></ol></div><p class="setting-note">महत्वपूर्ण: अगर app पूरी तरह बंद हो या फोन ने background में रोक दिया हो, तो alarm की guarantee नहीं है। बंद app में भरोसेमंद push alarm के लिए server push service अलग से चाहिए।</p></div>';return;
 }
 if(page==='security'){
  const enabled=localStorage.getItem('twcrm_lock_enabled')==='1';
@@ -419,7 +419,7 @@ if(page==='followups'){
   const list=db.customers.filter(x=>x.followUpDate&&x.status!=='Converted'&&x.status!=='Lost')
    .slice().sort((a,b)=>(a.followUpDate||'').localeCompare(b.followUpDate||''));
   c.innerHTML='<div class="pagehead"><h2>Follow-up Reminders</h2><button onclick="goPage(\'customers\')">Manage Leads</button></div>'+
-   '<p class="muted">यह सूची आपके दर्ज किए हुए follow-up date/time पर आधारित है। यह browser notification नहीं भेजती।</p>'+
+   '<p class="muted">हर ग्राहक के लिए तारीख और समय दर्ज करें। Notification ON होने पर कॉल से 2 मिनट पहले स्क्रीन पर alert और bell sound मिलेगा।</p>'+
    tbl(['Customer','Phone','Status','Date','Time','Notes'],list.map(x=>{
     const late=x.followUpDate<today();
     return '<tr><td>'+escapeHTML(x.name)+'</td><td>'+escapeHTML(x.phone)+
@@ -654,31 +654,51 @@ function lockApp(){
  document.body.appendChild(overlay);$('unlockBtn').onclick=()=>{if($('unlockPin').value===localStorage.getItem('twcrm_lock_pin'))overlay.remove();else $('unlockError').classList.remove('hidden')};$('unlockPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
 }
 
+let reminderAudioContext=null;
+function playReminderBell(){
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  if(!reminderAudioContext)reminderAudioContext=new AC();
+  if(reminderAudioContext.state==='suspended')reminderAudioContext.resume();
+  [0,0.28,0.56].forEach((delay,i)=>{const osc=reminderAudioContext.createOscillator(),gain=reminderAudioContext.createGain();osc.type='sine';osc.frequency.value=[880,1174,988][i];gain.gain.setValueAtTime(0.0001,reminderAudioContext.currentTime+delay);gain.gain.exponentialRampToValueAtTime(0.22,reminderAudioContext.currentTime+delay+0.025);gain.gain.exponentialRampToValueAtTime(0.0001,reminderAudioContext.currentTime+delay+0.22);osc.connect(gain);gain.connect(reminderAudioContext.destination);osc.start(reminderAudioContext.currentTime+delay);osc.stop(reminderAudioContext.currentTime+delay+0.24)});
+ }catch(e){console.warn('Reminder sound unavailable',e)}
+}
 async function enableNotifications(){
- if(!('Notification' in window)){alert('यह browser notifications support नहीं करता।');return}
+ if(!('Notification' in window)){alert('यह browser notifications support नहीं करता। Chrome में app खोलें।');return}
  try{
   const permission=await Notification.requestPermission();
-  if(permission!=='granted'){alert('Browser notification permission allow नहीं हुई।');return}
-  $('notifyState').textContent=' Notifications enabled while app is open.';
+  if(permission!=='granted'){alert('Browser notification permission allow नहीं हुई। फोन की Settings में इस app/Chrome की notifications भी Allow करें।');return}
+  playReminderBell();
+  if($('notifyState'))$('notifyState').textContent='✅ Notifications ON · 2 मिनट पहले reminder + bell sound';
   checkFollowupNotifications();
-  alert('Notifications enabled. Follow-up alerts चलाने के लिए वेबसाइट खुली रखें।');
+  alert('Reminder alerts ON हो गए। सही समय पर अलर्ट के लिए CRM खुला रखें और फोन का volume/notification permission चालू रखें।');
  }catch(e){alert('Notification error: '+e.message)}
 }
 const notifiedFollowups=new Set();
 function checkFollowupNotifications(){
- if(!('Notification' in window)||Notification.permission!=='granted'||!user)return;
+ if(!user)return;
  const now=new Date();
  db.customers.forEach(x=>{
   if(!x.followUpDate||!x.followUpTime||['Converted','Lost'].includes(normStatus(x.status)))return;
   const when=new Date(x.followUpDate+'T'+x.followUpTime);
+  if(Number.isNaN(when.getTime()))return;
+  const alertAt=new Date(when.getTime()-2*60*1000);
   const key=String(x.id)+'|'+x.followUpDate+'|'+x.followUpTime;
-  if(when<=now&&now-when<24*60*60*1000&&!notifiedFollowups.has(key)){
-   new Notification('Team Work CRM · Follow-up due',{body:(x.name||'Customer')+' · '+(x.phone||'')+' · '+x.followUpTime});
+  if(now>=alertAt&&now<=new Date(when.getTime()+24*60*60*1000)&&!notifiedFollowups.has(key)){
+   const body='अब कॉल करने की तैयारी करें: '+(x.name||'Customer')+' · '+(x.phone||'Phone नहीं')+' · कॉल का समय '+x.followUpTime+' · तारीख '+x.followUpDate;
+   let sent=false;
+   if('Notification' in window&&Notification.permission==='granted'){
+    try{const n=new Notification('🔔 2 मिनट में Follow-up Call',{body,tag:'followup-'+key,requireInteraction:true});n.onclick=()=>{window.focus();goPage('followups');n.close()};sent=true}catch(e){console.warn(e)}
+   }
+   playReminderBell();
+   if(!sent&&document.visibilityState==='visible')alert('🔔 FOLLOW-UP REMINDER\n'+body);
    notifiedFollowups.add(key);
   }
  });
 }
-setInterval(checkFollowupNotifications,60000);
+setInterval(checkFollowupNotifications,15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkFollowupNotifications()});
+
 
 init().catch(e=>{setStatus('Startup error');message(e.message,true)}).finally(()=>setTimeout(()=>$('splash')?.classList.add('hide'),1800));
 </script>
