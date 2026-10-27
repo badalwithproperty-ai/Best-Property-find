@@ -56,7 +56,7 @@ th{background:#eef4f0}
     <h2 id="authTitle">Login to PROPERTY FIND</h2>
     <p class="muted">Email और password से login करें।</p>
     <form id="authForm">
-      <div id="nameWrap" class="field hidden"><label>Full name</label><input id="fullName" autocomplete="name"></div>
+      <div id="nameWrap" class="hidden"><div class="field"><label>Full name</label><input id="fullName" autocomplete="name"></div><div class="field"><label>Mobile number</label><input id="phone" type="tel" autocomplete="tel"></div><div class="field"><label>Designation</label><select id="designation"><option value="">Select designation</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Associate</option><option>Other</option></select></div><p class="muted">Admin के registration link से आएँ। Approval तक CRM access नहीं मिलेगा।</p></div>
       <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email"></div>
       <div class="field"><label>Password</label><input id="password" type="password" minlength="6" required autocomplete="current-password"></div>
       <div class="actions">
@@ -126,7 +126,7 @@ function toggleMode(){
  $('submit').textContent=mode==='login'?'Login':'Create account';
  $('modeBtn').textContent=mode==='login'?'Create account':'Back to Login';
  $('nameWrap').classList.toggle('hidden',mode==='login');
- $('fullName').required=mode==='signup';
+ $('fullName').required=mode==='signup';$('phone').required=mode==='signup';$('designation').required=mode==='signup';
  $('password').autocomplete=mode==='login'?'current-password':'new-password';
  hideMessage();
 }
@@ -158,11 +158,11 @@ $('authForm').addEventListener('submit',async e=>{
   const email=$('email').value.trim(),password=$('password').value;
   let result;
   if(mode==='signup'){
-   result=await sb.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim()}}});
+   const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await sb.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner}}});
   }else result=await sb.auth.signInWithPassword({email,password});
   if(result.error)throw result.error;
   if(mode==='signup'&&!result.data.session){
-   message('Signup request पूरी हुई। Email confirmation करके Login करें।');
+   message('Registration पूरी हुई। Email confirmation करें, फिर Login करें। Admin approval तक access नहीं मिलेगा।');
   }else if(result.data.session){
    await load(result.data.session.user);
   }
