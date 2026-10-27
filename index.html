@@ -198,6 +198,8 @@ async function load(authUser){
  if(!sb||!authUser||loading)return;
  loading=true;user=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
  try{
+  const signupMeta=authUser.user_metadata||{};
+  if(signupMeta.workspace_owner_id){workspaceOwnerId=signupMeta.workspace_owner_id;isWorkspaceOwner=false;}
   try{
    const {data:membership,error:memberError}=await sb.from('workspace_members')
     .select('workspace_owner_id,member_user_id,role').eq('member_user_id',authUser.id).maybeSingle();
