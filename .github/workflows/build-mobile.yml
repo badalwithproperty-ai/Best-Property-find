@@ -1,0 +1,68 @@
+name: Build PROPERTY FIND mobile apps
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'index.html'
+      - 'manifest.json'
+      - 'service-worker.js'
+      - 'icons/**'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build-mobile.yml'
+permissions:
+  contents: read
+jobs:
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Prepare web app
+        run: |
+          npm run copy:web
+          npx cap add android
+          npx cap sync android
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: property-find-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+  ios-simulator:
+    name: iOS Simulator build (unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Prepare iOS project
+        run: |
+          npm run copy:web
+          npx cap add ios
+          npx cap sync ios
+      - name: Build simulator app
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator app
+        run: cd build/ios/Build/Products/Debug-iphonesimulator && zip -r "$GITHUB_WORKSPACE/property-find-ios-simulator.zip" App.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: property-find-ios-simulator-unsigned
+          path: property-find-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 30
