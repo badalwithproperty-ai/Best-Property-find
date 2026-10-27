@@ -329,6 +329,7 @@ async function load(authUser){
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
   setStatus('Cloud connected');render();
+  if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
   message('Cloud database error: '+err.message,true);
@@ -407,7 +408,7 @@ function render(){
 }
 if(page==='security'){
  const enabled=localStorage.getItem('twcrm_lock_enabled')==='1';
- c.innerHTML='<div class="panel"><h2>🔒 App Lock & Security</h2><p>Set a 4–8 digit PIN for a manual privacy lock.</p><div class="field"><label>New PIN (4–8 digits)</label><input id="lockPin" type="password" inputmode="numeric" maxlength="8" placeholder="Enter a PIN"></div><div class="field"><label>Confirm PIN</label><input id="lockPinConfirm" type="password" inputmode="numeric" maxlength="8" placeholder="Re-enter PIN"></div><div class="actions"><button onclick="saveAppPin()">Save / Update PIN</button><button class="secondary" onclick="lockApp()">Lock App Now</button><button class="danger" onclick="disableAppPin()">Disable App Lock</button></div><p class="muted">App lock status: <b>'+(enabled?'Enabled':'Not enabled')+'</b></p><p class="setting-note">Convenience privacy lock only, not encryption. It does not replace your account password or protect data stored outside this device.</p></div>';return;
+ c.innerHTML='<div class="panel"><h2>🔒 App Lock & Security</h2><p>6 अंकों का PIN सेट करें। ऐप minimize/background में जाने या दोबारा खुलने पर PIN माँगा जाएगा।</p><div class="field"><label>New PIN (6 digits)</label><input id="lockPin" type="password" inputmode="numeric" maxlength="6" placeholder="6-digit PIN"></div><div class="field"><label>Confirm PIN</label><input id="lockPinConfirm" type="password" inputmode="numeric" maxlength="6" placeholder="Confirm 6-digit PIN"></div><div class="actions"><button onclick="saveAppPin()">Save / Update PIN</button><button class="secondary" onclick="lockApp()">Lock App Now</button><button class="danger" onclick="disableAppPin()">Disable App Lock</button></div><p class="muted">App lock status: <b>'+(enabled?'Enabled':'Not enabled')+'</b></p><p class="setting-note">यह device पर app screen lock है, data encryption नहीं। PIN इसी device/browser में store होता है।</p></div>';return;
 }
 if(page==='contact'){
  c.innerHTML='<div class="panel"><h2>☎️ Contact & Support</h2><p>If you face an app issue, contact your app administrator/support team.</p><div class="field"><label>Support phone</label><p><b><a href="tel:8130785010">8130785010</a></b></p><div class="actions"><a href="tel:8130785010"><button type="button">Call Support</button></a><a href="https://wa.me/918130785010" target="_blank" rel="noopener"><button type="button" class="secondary">WhatsApp Support</button></a></div></div><div class="field"><label>Support email</label><p><b>अभी उपलब्ध नहीं</b></p><p class="muted">Official support email address has not been provided yet.</p></div></div>';return;
@@ -648,11 +649,20 @@ function disableAppPin(){
 }
 function verifyAppPin(title){const pin=prompt(title||'App unlock करने के लिए PIN डालें');if(pin===null)return false;if(pin!==localStorage.getItem('twcrm_lock_pin')){alert('गलत PIN।');return false}return true}
 function lockApp(){
- if(localStorage.getItem('twcrm_lock_enabled')!=='1'){alert('पहले App Lock & Security में PIN सेट करें।');goPage('security');return}
+ if(localStorage.getItem('twcrm_lock_enabled')!=='1'||!localStorage.getItem('twcrm_lock_pin')){alert('पहले App Lock & Security में 6 अंकों का PIN सेट करें।');goPage('security');return}
+ if($('appLockOverlay'))return;
  const overlay=document.createElement('div');overlay.className='lock-overlay';overlay.id='appLockOverlay';
  overlay.innerHTML='<div class="lock-card"><h2>🔒 Team Work CRM Locked</h2><p>अपना PIN डालकर ऐप खोलें।</p><div class="field"><label>PIN</label><input id="unlockPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div><button id="unlockBtn">Unlock App</button><p id="unlockError" class="err hidden">गलत PIN। दोबारा कोशिश करें।</p></div>';
  document.body.appendChild(overlay);$('unlockBtn').onclick=()=>{if($('unlockPin').value===localStorage.getItem('twcrm_lock_pin'))overlay.remove();else $('unlockError').classList.remove('hidden')};$('unlockPin').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
 }
+
+// Auto-lock when the app is backgrounded/minimized, and require PIN on return.
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden&&user&&localStorage.getItem('twcrm_lock_enabled')==='1')lockApp();
+});
+window.addEventListener('pagehide',()=>{
+ if(user&&localStorage.getItem('twcrm_lock_enabled')==='1')lockApp();
+});
 
 let reminderAudioContext=null;
 function playReminderBell(){
