@@ -4,6 +4,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>PROPERTY FIND CRM</title>
 <style>
 *{box-sizing:border-box}
@@ -87,6 +90,14 @@ th{background:#eef4f0}
 </main>
 <div id="modal"></div>
 
+<script>
+(function(){
+ var showBootError=function(text){var s=document.getElementById("status");if(s)s.textContent="Page error";var m=document.getElementById("msg");if(m){m.textContent=text;m.classList.remove("hidden");m.classList.add("err")}};
+ window.addEventListener("error",function(e){showBootError("JavaScript error: "+(e.message||"unknown error")+" ("+(e.filename||"page")+(e.lineno?":"+e.lineno:"")+")")});
+ window.addEventListener("unhandledrejection",function(e){var r=e.reason;showBootError("Startup error: "+(r&&r.message?r.message:String(r))) });
+ document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("auth");if(a)a.classList.remove("hidden");var s=document.getElementById("status");if(s&&s.textContent==="Connecting...")s.textContent="Page loaded; starting CRM…"});
+})();
+</script>
 <script>
 'use strict';
 
