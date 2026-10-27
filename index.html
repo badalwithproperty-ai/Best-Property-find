@@ -200,11 +200,14 @@ async function load(authUser){
  try{
   const meta=authUser.user_metadata||{};
   if(meta.workspace_owner_id){workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;}
+  const isSelfRegistrant=Boolean(meta.workspace_owner_id&&meta.full_name&&meta.phone&&meta.designation);
   let membership=null;
-  try{
-   const {data,error}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role').eq('member_user_id',authUser.id).maybeSingle();
-   if(!error&&data){membership=data;workspaceOwnerId=data.workspace_owner_id;isWorkspaceOwner=false;}
-  }catch(e){}
+  if(isSelfRegistrant){
+   workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;
+   const {data,error}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role').eq('workspace_owner_id',workspaceOwnerId).eq('member_user_id',authUser.id).maybeSingle();
+   if(error)throw error;
+   membership=data;
+  }
   if(!isWorkspaceOwner&&meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
    const {data:existingRequest,error:lookupError}=await sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle();
    if(lookupError)throw lookupError;
