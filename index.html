@@ -80,6 +80,7 @@ th{background:#eef4f0}
     <button onclick="goPage('followups')">Follow-up Reminders</button>
     <button onclick="goPage('reports')">Sales Reports</button>
     <button onclick="goPage('team')">Team Performance</button>
+    <button onclick="goPage('teamaccess')">Team Access</button>
     <button onclick="goPage('backup')">Backup</button>
   </div>
   <div id="content"></div>
@@ -94,6 +95,7 @@ const SUPABASE_URL='https://gevdyoshdxquxxavchyb.supabase.co';
 const SUPABASE_KEY='sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
 
 let sb=null,user=null,mode='login',page='dashboard';
+let workspaceOwnerId=null,isWorkspaceOwner=true,teamMembers=[];
 let authBusy=false,loading=false,saveBusy=false;
 let db={customers:[],inventory:[],associates:[],activities:[]};
 
@@ -194,12 +196,24 @@ async function logout(){
 
 async function load(authUser){
  if(!sb||!authUser||loading)return;
- loading=true;user=authUser;setStatus('Connecting to cloud...');
+ loading=true;user=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
  try{
+  try{
+   const {data:membership,error:memberError}=await sb.from('workspace_members')
+    .select('workspace_owner_id,member_user_id,role').eq('member_user_id',authUser.id).maybeSingle();
+   if(!memberError&&membership){workspaceOwnerId=membership.workspace_owner_id;isWorkspaceOwner=false;}
+  }catch(e){}
   const {data:row,error}=await sb.from('workspace_state')
-   .select('data').eq('owner_id',authUser.id).maybeSingle();
+   .select('data').eq('owner_id',workspaceOwnerId).maybeSingle();
   if(error)throw error;
   const saved=row?.data||{};
+  if(isWorkspaceOwner){
+   try{
+    const {data:members,error:membersError}=await sb.from('workspace_members')
+     .select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id);
+    if(!membersError)teamMembers=members||[];
+   }catch(e){}
+  }
   db={
    customers:Array.isArray(saved.customers)?saved.customers:[],
    inventory:Array.isArray(saved.inventory)?saved.inventory:[],
@@ -209,7 +223,7 @@ async function load(authUser){
   // पुराने records को पढ़ते समय नए fields की जरूरत नहीं होती।
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');
   $('out').classList.remove('hidden');
-  $('welcome').textContent='Workspace · '+(authUser.email||'');
+  $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
   setStatus('Cloud connected');render();
  }catch(err){
   user=null;setStatus('Database error');
@@ -225,7 +239,7 @@ async function save(){
  saveBusy=true;setStatus('Saving to cloud...');
  try{
   const {error}=await sb.from('workspace_state').upsert({
-   owner_id:user.id,data:db,updated_at:new Date().toISOString()
+   owner_id:workspaceOwnerId||user.id,data:db,updated_at:new Date().toISOString()
   },{onConflict:'owner_id'});
   if(error)throw error;
   setStatus('Cloud synced');render();return true;
@@ -318,6 +332,21 @@ function render(){
   return;
  }
 
+ if(page==='teamaccess'){
+  if(!isWorkspaceOwner){c.innerHTML='<div class="panel"><h2>Team Access</h2><p>Associate account: access जोड़ने/हटाने के लिए Admin से संपर्क करें।</p></div>';return;}
+  c.innerHTML='<div class="panel"><h2>Team Access</h2><p class="muted">Associate पहले अपनी email से account बनाए। Supabase → Authentication → Users में उसका User UID copy करके यहाँ डालें। Password share न करें।</p>'+
+   '<form id="memberForm"><div class="field"><label>Associate User UID</label><input id="memberUid" required placeholder="Supabase Auth user UUID"></div>'+
+   '<div class="field"><label>Role</label><select id="memberRole"><option value="associate">Associate</option><option value="admin">Admin</option></select></div><button type="submit">Add Team Member</button></form></div>'+
+   '<div class="panel"><h3>Current Members</h3>'+tbl(['User UID','Role','Added','Action'],teamMembers.map(m=>'<tr><td>'+escapeHTML(m.member_user_id)+'</td><td>'+escapeHTML(m.role)+'</td><td>'+fmtDate((m.created_at||'').slice(0,10))+'</td><td><button class="small danger" onclick="removeTeamMember(\''+escapeHTML(m.member_user_id)+'\')">Remove</button></td></tr>').join(''))+'</div>';
+  $('memberForm').onsubmit=async e=>{
+   e.preventDefault();const uid=$('memberUid').value.trim(),role=$('memberRole').value;
+   if(uid===user.id){alert('आप खुद को team member के रूप में add नहीं कर सकते।');return}
+   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uid)){alert('Valid Supabase User UID डालें।');return}
+   const {error}=await sb.from('workspace_members').upsert({workspace_owner_id:user.id,member_user_id:uid,role},{onConflict:'workspace_owner_id,member_user_id'});
+   if(error){alert('Member add failed: '+error.message+' — पहले Supabase SQL setup चलाएँ।');return}
+   alert('Team member add हो गया। वह अपनी email/password से login कर सकता है।');await load(user);
+  };return;
+ }
  if(page==='backup'){
   c.innerHTML='<div class="panel"><h2>Backup & Excel/CSV</h2><div class="actions">'+
    '<button onclick="backup()">Download JSON Backup</button>'+
@@ -405,6 +434,11 @@ async function del(kind,id){
  if(!confirm('यह record delete करें?'))return;
  const old=db[kind];db[kind]=old.filter(x=>x.id!==id);
  const ok=await save();if(!ok)db[kind]=old;
+}
+async function removeTeamMember(uid){
+ if(!isWorkspaceOwner||!user||!confirm('इस team member का access हटाएँ?'))return;
+ const {error}=await sb.from('workspace_members').delete().eq('workspace_owner_id',user.id).eq('member_user_id',uid);
+ if(error){alert('Remove failed: '+error.message);return}await load(user);
 }
 function backup(){
  try{
