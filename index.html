@@ -77,6 +77,28 @@ button:active{transform:scale(.98)}
 .splash-tag{font-size:12px;letter-spacing:3px;color:#e4f5e8}
 .splash-line{width:70px;height:4px;background:var(--crm-gold);border-radius:9px;margin-top:12px}
 @media(max-width:650px){header{padding:11px 12px}.brand img{width:42px;height:42px}.brand b{font-size:18px}.wrap{padding:12px}#auth{padding-top:18px}#auth .card{padding:18px}.splash-logo{width:112px;height:112px}.splash-title{font-size:29px}}
+
+/* Premium real-estate CRM experience — consistent across every module */
+:root{--crm-green:#07583f;--crm-deep:#052f25;--crm-lime:#a7df73;--crm-gold:#e4b84f;--crm-bg:#f4f7f4;--crm-ink:#17352a;--crm-line:#dce7df}
+body{background:linear-gradient(180deg,#f2f7f2 0%,#f7f9f7 45%,#edf4ef 100%);color:var(--crm-ink)}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(115deg,#052f25 0%,#07583f 58%,#13724c 100%);border-bottom:3px solid var(--crm-gold);padding:12px max(16px,calc((100vw - 1200px)/2))}
+.brand b{font-size:19px;letter-spacing:.1px}.brand-sub{font-size:10px;letter-spacing:.8px}
+.wrap{max-width:1240px;padding:20px}
+#app>h1{font-size:26px;letter-spacing:-.5px;color:var(--crm-deep);margin:12px 0 15px}
+.tabs{background:#fff;padding:10px!important;border:1px solid #dce8df;border-radius:16px;box-shadow:0 6px 22px #153e2b0a;gap:8px!important}
+.tabs button{font-size:13px;padding:10px 13px;border:1px solid transparent}
+#content{min-width:0}#content h2{font-size:22px;letter-spacing:-.3px}#content h3{font-size:17px}
+.card,.panel,.stat{background:#fff;border:1px solid var(--crm-line);border-radius:17px;box-shadow:0 7px 24px #103c2810;padding:19px}
+.stats{gap:12px;margin:14px 0 18px}.stat{position:relative;overflow:hidden;padding:17px 17px 18px;border-top:3px solid #1d8056}.stat:after{content:"";position:absolute;width:64px;height:64px;border-radius:50%;background:#eaf5e9;right:-22px;bottom:-28px}.stat small{font-size:12px;font-weight:700;color:#61776a;letter-spacing:.2px}.stat strong{display:block;font-size:28px;line-height:1.35;color:#07583f;margin-top:6px;position:relative;z-index:1}
+.tablewrap{border:1px solid #dce7df;border-radius:14px;box-shadow:0 4px 16px #123c3208}table{min-width:650px}th{background:#eaf3ec;color:#174b36;font-size:12px;text-transform:uppercase;letter-spacing:.35px}td{font-size:14px}tbody tr:nth-child(even){background:#fafcf9}tbody tr:hover{background:#f0f7ef}
+input,select,textarea{border-color:#cbdacf;background:#fff}input:focus,select:focus,textarea:focus{outline:2px solid #b9dfc3;border-color:#168052}
+button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box-shadow:0 4px 10px #07563818}button.secondary{background:#eaf2eb;color:#124b36;border:1px solid #d5e4d8}button.danger{background:#fff0ed;color:#b42318;box-shadow:none}
+.badge{background:#e7f4e8;color:#175b3c;font-weight:700}.pagehead{margin-bottom:10px}
+.real-estate-hero{position:relative;isolation:isolate;overflow:hidden;min-height:220px;padding:26px;border-radius:22px;background:linear-gradient(110deg,#052f25 0%,#07583f 55%,#267b4f 100%);color:white;box-shadow:0 12px 30px #073c2d24;margin:8px 0 18px;border:1px solid #d4b15c}
+.real-estate-hero:before{content:"";position:absolute;z-index:-1;right:-35px;bottom:-70px;width:310px;height:245px;background:linear-gradient(140deg,#d7efbd,#78b95e);clip-path:polygon(0 100%,0 45%,12% 45%,12% 24%,25% 24%,25% 40%,37% 40%,37% 9%,55% 9%,55% 34%,68% 34%,68% 0,83% 0,83% 45%,100% 45%,100% 100%);opacity:.23}
+.hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:2px;color:#e8c65f;margin-bottom:9px}.hero-title{font-size:clamp(25px,4vw,37px);font-weight:850;line-height:1.05;letter-spacing:-.8px;margin:0 0 8px;color:#fff!important}.hero-subtitle{font-size:14px;color:#e1f1e5;max-width:570px;line-height:1.6}.hero-tagline{display:inline-flex;align-items:center;gap:8px;margin-top:15px;padding:8px 12px;border:1px solid #ffffff40;border-radius:9px;background:#ffffff10;font-size:12px;font-weight:750;letter-spacing:.4px}.hero-pill{display:inline-block;border-radius:30px;padding:5px 9px;background:#e3bd53;color:#173a2b;font-size:11px;font-weight:850;margin-bottom:14px}
+.workflow-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}.workflow-step{background:#fff;border:1px solid #dce7df;border-radius:14px;padding:13px;display:flex;align-items:center;gap:10px}.workflow-num{flex:0 0 32px;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#e7f2e8;color:#07583f;font-weight:850}.workflow-step b{display:block;font-size:13px;color:#164a34}.workflow-step small{display:block;color:#718176;font-size:11px;margin-top:3px}.section-kicker{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;font-weight:850;color:#718176;margin:18px 0 8px}
+@media(max-width:700px){.wrap{padding:12px}.real-estate-hero{padding:21px;min-height:205px;border-radius:18px}.real-estate-hero:before{right:-80px;opacity:.18}.workflow-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.workflow-step{padding:10px;gap:8px}.workflow-num{width:29px;height:29px;flex-basis:29px}.stat{padding:14px}.stat strong{font-size:25px}#app>h1{font-size:23px}.tabs{border-radius:13px}}
 </style>
 </head>
 <body>
@@ -118,17 +140,18 @@ button:active{transform:scale(.98)}
 
 <main id="app" class="wrap hidden">
   <h1 id="welcome">Dashboard</h1>
+  <div class="section-kicker">WORKSPACE NAVIGATION · FOLLOW EACH STAGE</div>
   <div class="tabs">
-    <button onclick="goPage('dashboard')">Dashboard</button>
-    <button onclick="goPage('customers')">Customers & Leads</button>
-    <button onclick="goPage('inventory')">Inventory</button>
-    <button onclick="goPage('associates')">Associates</button>
-    <button onclick="goPage('activities')">Calls & Activities</button>
-    <button onclick="goPage('followups')">Follow-up Reminders</button>
-    <button onclick="goPage('reports')">Sales Reports</button>
-    <button onclick="goPage('team')">Team Performance</button>
-    <button onclick="goPage('teamaccess')">Team Access</button>
-    <button onclick="goPage('backup')">Backup</button>
+    <button onclick="goPage('dashboard')">🏠 Overview</button>
+    <button onclick="goPage('customers')">👥 Leads & Customers</button>
+    <button onclick="goPage('inventory')">🏡 Plot Inventory</button>
+    <button onclick="goPage('associates')">🤝 Associates</button>
+    <button onclick="goPage('activities')">📞 Calls & Activities</button>
+    <button onclick="goPage('followups')">📅 Follow-ups</button>
+    <button onclick="goPage('reports')">📊 Sales Reports</button>
+    <button onclick="goPage('team')">🎯 Team Performance</button>
+    <button onclick="goPage('teamaccess')">🔐 Team Access</button>
+    <button onclick="goPage('backup')">💾 Backup & Data</button>
   </div>
   <div id="content"></div>
 </main>
@@ -367,16 +390,18 @@ function render(){
    .reduce((n,a)=>n+Number(a.count||1),0);
   const converted=db.customers.filter(x=>x.status==='Converted').length;
   const pending=db.customers.filter(x=>x.followUpDate&&x.followUpDate>=today()&&x.status!=='Converted'&&x.status!=='Lost').length;
-  c.innerHTML=statCards([
+  c.innerHTML='<section class="real-estate-hero"><div class="hero-pill">TEAM WORK CRM · REAL ESTATE SALES</div><div class="hero-eyebrow">HPS BUILDTECH PVT. LTD. PRESENTS</div><h2 class="hero-title">SKS GREEN CITY</h2><div class="hero-subtitle">Apna Ghar, Apna Kal. Build customer trust, manage every lead, track follow-ups and grow your sales team — all in one professional workspace.</div><div class="hero-tagline">🌿 GREEN LIVING <span>•</span> BETTER TOMORROW</div></section>'+
+  '<div class="workflow-strip"><div class="workflow-step"><span class="workflow-num">01</span><div><b>Capture Leads</b><small>Customers & enquiries</small></div></div><div class="workflow-step"><span class="workflow-num">02</span><div><b>Show Inventory</b><small>Plots & availability</small></div></div><div class="workflow-step"><span class="workflow-num">03</span><div><b>Follow Up</b><small>Calls & reminders</small></div></div><div class="workflow-step"><span class="workflow-num">04</span><div><b>Close & Grow</b><small>Reports & team targets</small></div></div></div>'+
+  '<div class="section-kicker">SALES OVERVIEW · LIVE WORKSPACE DATA</div>'+statCards([
    ['Total Leads',db.customers.length],
-   ['Inventory',db.inventory.length],
+   ['Plot Inventory',db.inventory.length],
    ['Associates',db.associates.length],
    ['Calls Logged',calls],
    ['Converted Leads',converted],
    ['Conversion Rate',db.customers.length?((converted/db.customers.length)*100).toFixed(1)+'%':'0%'],
    ['Upcoming Follow-ups',pending],
    ['Activities',db.activities.length]
-  ])+'<div class="panel"><h3>Recent Leads</h3>'+
+  ])+'<div class="panel"><div class="pagehead"><h3>Recent Leads</h3><button onclick="goPage(\'customers\')">View all leads →</button></div>'+
   tbl(['Name','Phone','Requirement','Status','Follow-up'],
    db.customers.slice().reverse().slice(0,8).map(x=>'<tr><td>'+escapeHTML(x.name)+
    '</td><td>'+escapeHTML(x.phone)+'</td><td>'+escapeHTML(x.requirement)+
