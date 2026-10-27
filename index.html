@@ -379,6 +379,24 @@ async function load(authUser){
  loading=true;user=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
  try{
   const meta=authUser.user_metadata||{};
+  // Do not treat a referral account as a Main Admin just because it lacks legacy email-signup metadata.
+  // Full hierarchy data filtering must be enabled before referral members are allowed into shared CRM records.
+  const {data:referralProfile,error:referralProfileError}=await withTimeout(
+   sb.from('member_profiles').select('user_id,workspace_owner_id,approval_status,referral_id').eq('user_id',authUser.id).maybeSingle(),
+   'Referral account check'
+  );
+  if(referralProfileError&&referralProfileError.code!=='42P01')throw referralProfileError;
+  if(referralProfile){
+   if(referralProfile.workspace_owner_id!==authUser.id){
+    user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+    setStatus(referralProfile.approval_status==='approved'?'Hierarchy setup pending':'Awaiting approval');
+    message(referralProfile.approval_status==='approved'
+      ?'आपका Referral account approved है, लेकिन direct-recruit data permissions अभी सुरक्षित रूप से लागू नहीं हुए हैं। सुरक्षा के लिए CRM access फिलहाल बंद है। Main Admin hierarchy setup पूरा करें।'
+      :'आपकी registration Main Admin approval का इंतज़ार कर रही है। Approval तक CRM access नहीं मिलेगा।');
+    return;
+   }
+   workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
+  }
   if(meta.workspace_owner_id){workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;}
   const isSelfRegistrant=Boolean(meta.workspace_owner_id&&meta.full_name&&meta.phone&&meta.designation);
   let membership=null;
