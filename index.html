@@ -421,7 +421,7 @@ function csvCell(v){
  return '"'+s.replace(/"/g,'""')+'"';
 }
 function downloadText(filename,text,mime='text/csv;charset=utf-8;'){
- const blob=new Blob(['\\uFEFF',text],{type:mime});
+ const blob=new Blob(['\uFEFF',text],{type:mime});
  const url=window.URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>window.URL.revokeObjectURL(url),1200);
@@ -435,13 +435,13 @@ function exportAllCSV(){
    const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','unit','type','size','location','rate','status'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
    headers.push(...defaults);
   }
-  const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\\r\\n');
+  const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');
   downloadText('property-find-'+kind+'.csv',csv);
  });
 }
 function parseCSV(text){
  const rows=[];let row=[],field='',quoted=false;
- text=text.replace(/^\\uFEFF/,'');
+ text=text.replace(/^\uFEFF/,'');
  for(let i=0;i<text.length;i++){
   const ch=text[i],next=text[i+1];
   if(quoted){
