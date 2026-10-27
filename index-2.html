@@ -36,7 +36,7 @@ body:not(.authenticated) header,body:not(.authenticated) .layout{display:none!im
 // Replace these two placeholders with values from Supabase Project Settings.
 const savedSupabaseConfig = (() => { try { return JSON.parse(localStorage.getItem('property_find_supabase_config') || '{}'); } catch (_) { return {}; } })();
 let SUPABASE_URL = savedSupabaseConfig.url || 'https://gevdyoshdxquxxavchyb.supabase.co';
-let SUPABASE_PUBLISHABLE_KEY = savedSupabaseConfig.key || 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
+let SUPABASE_PUBLISHABLE_KEY = savedSupabaseConfig.key || 'sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
 let supabaseClient = null, currentUser = null, authMode = 'login', cloudReady = false, saveTimer = null;
 const KEY='property_find_demo_v1';
 const initial={profile:{name:'Workspace Admin',email:'',phone:'',role:'Admin'},associates:[],customers:[],inventory:[],activities:[]};
