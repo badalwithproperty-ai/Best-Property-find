@@ -114,6 +114,7 @@ function message(text,isError=false){
 }
 function hideMessage(){$('msg').classList.add('hidden')}
 function setStatus(text){$('status').textContent=text}
+function withTimeout(promise,label='Supabase request',ms=12000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check internet and Supabase status.')),ms))])}
 function goPage(p){page=p;render()}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
@@ -139,10 +140,7 @@ async function init(){
    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   });
   setStatus('Checking session...');
-  const sessionResult=await Promise.race([
-   sb.auth.getSession(),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Session check timed out')),12000))
-  ]);
+  const sessionResult=await withTimeout(sb.auth.getSession(),'Session check');
   if(sessionResult.error)throw sessionResult.error;
   if(sessionResult.data.session)await load(sessionResult.data.session.user);
   else {showLogin();message('Login करने के लिए email और password भरें।')}
@@ -170,7 +168,7 @@ $('authForm').addEventListener('submit',async e=>{
   let result;
   if(mode==='signup'){
    const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await sb.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner}}});
-  }else result=await sb.auth.signInWithPassword({email,password});
+  }else result=await withTimeout(sb.auth.signInWithPassword({email,password}),'Login request');
   if(result.error)throw result.error;
   if(mode==='signup'&&!result.data.session){
    message('Registration पूरी हुई। Email confirmation करें, फिर Login करें। Admin approval तक access नहीं मिलेगा।');
@@ -215,15 +213,15 @@ async function load(authUser){
   let membership=null;
   if(isSelfRegistrant){
    workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;
-   const {data,error}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role').eq('workspace_owner_id',workspaceOwnerId).eq('member_user_id',authUser.id).maybeSingle();
+   const {data,error}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role').eq('workspace_owner_id',workspaceOwnerId).eq('member_user_id',authUser.id).maybeSingle(),'Membership check');
    if(error)throw error;
    membership=data;
   }
   if(!isWorkspaceOwner&&meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
-   const {data:existingRequest,error:lookupError}=await sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle();
+   const {data:existingRequest,error:lookupError}=await withTimeout(sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle(),'Registration request check');
    if(lookupError)throw lookupError;
    if(!existingRequest){
-    const {error:requestError}=await sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'});
+    const {error:requestError}=await withTimeout(sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'}),'Registration request save');
     if(requestError)throw requestError;
    }
    if(!membership){
@@ -235,11 +233,11 @@ async function load(authUser){
     setStatus('Registration rejected');message('आपकी registration request reject हुई है। Admin से संपर्क करें।');return;
    }
   }
-  const {data:row,error}=await sb.from('workspace_state').select('data').eq('owner_id',workspaceOwnerId).maybeSingle();
+  const {data:row,error}=await withTimeout(sb.from('workspace_state').select('data').eq('owner_id',workspaceOwnerId).maybeSingle(),'Workspace data load');
   if(error)throw error;
   const saved=row?.data||{};
   if(isWorkspaceOwner){
-   const {data:members,error:membersError}=await sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id);
+   const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
   }
   db={
