@@ -286,6 +286,16 @@ function statusOptions(selected){
  return STATUSES.map(s=>'<option value="'+s+'" '+(s===selected?'selected':'')+'>'+s+'</option>').join('');
 }
 
+async function renderTeamAccess(c){
+ if(!user||!sb){c.innerHTML='<div class="panel">Please login again.</div>';return;}
+ c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Loading registration requests…</p></div>';
+ const {data:reqs,error}=await sb.from('team_join_requests').select('*').eq('workspace_owner_id',user.id).order('created_at',{ascending:false});
+ if(error){c.innerHTML='<div class="panel"><h2>Join Requests</h2><p>Requests load नहीं हुईं: '+escapeHTML(error.message)+'</p></div>';return;}
+ const link=location.origin+location.pathname+'?join='+encodeURIComponent(user.id);
+ c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">यह link team के साथ share करें। Members खुद register करेंगे और approval तक access नहीं मिलेगा।</p><input id="joinLink" readonly value="'+escapeHTML(link)+'"><button onclick="copyJoinLink()">Copy Registration Link</button></div>'+
+ '<div class="panel"><h3>Join Requests</h3>'+tbl(['Name','Mobile','Email','Designation','Date','Status','Action'],(reqs||[]).map(r=>'<tr><td>'+escapeHTML(r.full_name)+'</td><td>'+escapeHTML(r.phone)+'</td><td>'+escapeHTML(r.email)+'</td><td>'+escapeHTML(r.designation)+'</td><td>'+fmtDate((r.created_at||'').slice(0,10))+'</td><td>'+escapeHTML(r.status)+'</td><td>'+(r.status==='pending'?'<button onclick="approveMember(\\''+escapeHTML(r.id)+'\\')">Approve</button> <button class="danger" onclick="rejectMember(\\''+escapeHTML(r.id)+'\\')">Reject</button>':'—')+'</td></tr>').join(''))+'</div>';
+}
+
 function render(){
  const c=$('content');if(!c)return;
 
@@ -358,11 +368,9 @@ function render(){
 
  if(page==='teamaccess'){
   if(!isWorkspaceOwner){c.innerHTML='<div class="panel"><h2>Registration Pending</h2><p>Admin approval के बाद access मिलेगा।</p></div>';return;}
-  let reqs=[];const rq=await sb.from('team_join_requests').select('*').eq('workspace_owner_id',user.id).order('created_at',{ascending:false});if(!rq.error)reqs=rq.data||[];
-  const link=location.origin+location.pathname+'?join='+encodeURIComponent(user.id);
-  c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">यह link team के साथ share करें। Members खुद register करेंगे और approval तक access नहीं मिलेगा।</p><input id="joinLink" readonly value="'+escapeHTML(link)+'"><button onclick="copyJoinLink()">Copy Registration Link</button></div>'+
-  '<div class="panel"><h3>Join Requests</h3>'+tbl(['Name','Mobile','Email','Designation','Date','Status','Action'],reqs.map(r=>'<tr><td>'+escapeHTML(r.full_name)+'</td><td>'+escapeHTML(r.phone)+'</td><td>'+escapeHTML(r.email)+'</td><td>'+escapeHTML(r.designation)+'</td><td>'+fmtDate((r.created_at||'').slice(0,10))+'</td><td>'+escapeHTML(r.status)+'</td><td>'+(r.status==='pending'?'<button onclick="approveMember(\''+escapeHTML(r.id)+'\')">Approve</button> <button class="danger" onclick="rejectMember(\''+escapeHTML(r.id)+'\')">Reject</button>':'—')+'</td></tr>').join(''))+'</div>';return;
- } if(page==='backup'){
+  renderTeamAccess(c);return;
+ }
+ if(page==='backup'){
   c.innerHTML='<div class="panel"><h2>Backup & Excel/CSV</h2><div class="actions">'+
    '<button onclick="backup()">Download JSON Backup</button>'+
    '<button class="secondary" onclick="exportAllCSV()">Export all data (CSV)</button></div>'+
