@@ -222,6 +222,46 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 #menuPanel.crm-drawer{position:fixed;z-index:80;left:12px;right:12px;top:auto;bottom:calc(78px + env(safe-area-inset-bottom));width:auto;max-height:70vh;overflow:auto;padding:15px;background:#fff;border:1px solid #dce8df;border-radius:18px;box-shadow:0 16px 50px #102a1c33}
 .more-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.more-panel-head strong{font-size:17px}.more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.more-tile{display:flex!important;flex-direction:column;align-items:flex-start;gap:6px;min-height:88px;padding:13px!important;border:1px solid #e1ebe4!important;border-radius:13px!important;background:#f8fbf9!important;color:#163b2a!important;box-shadow:none!important;text-align:left}.more-tile span{font-size:20px}.more-tile b{font-size:13px}.more-tile small{font-size:11px;color:#708478}
 @media(max-width:700px){.workspace-header{margin-bottom:10px}.more-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Strict screen separation + screenshot-aligned TEAM WORK workspace shell */
+#app{width:100%;max-width:1440px;margin:0 auto;padding:18px 22px 26px;min-width:0}
+#app>#welcome{display:none!important}
+.workspace-header{min-height:44px;margin:0 0 16px;padding:0 0 12px;border-bottom:1px solid #e1e9e3}
+.workspace-header .section-kicker{margin:0 0 4px;color:#6b7d71}
+.workspace-header .muted{margin:0}
+.workspace-online{display:inline-flex;align-items:center;gap:7px;color:#507061;font-size:12px;font-weight:700;background:#fff;border:1px solid #e1e9e3;border-radius:22px;padding:8px 11px}
+.workspace-online i{display:block;width:7px;height:7px;border-radius:50%;background:#31a66b}
+#content{display:block;width:100%;min-width:0;min-height:50vh;overflow:visible;animation:twScreenIn .16s ease-out}
+#content>*{min-width:0}
+@keyframes twScreenIn{from{opacity:.65;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.tw-dashboard-tasks{margin-top:16px}
+.tw-dashboard-task{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #edf1ed}
+.tw-dashboard-task:last-child{border-bottom:0}
+.tw-dashboard-task-icon{width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:#e7f3e9;color:#087348;display:grid;place-items:center;font-weight:850}
+.tw-dashboard-task-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.tw-dashboard-task-main strong{font-size:14px;overflow-wrap:anywhere}
+.tw-dashboard-task-main small{font-size:12px;color:#728176}
+.tw-status-done{background:#e5f5e8!important;color:#177245!important}
+.tw-status-progress{background:#fff4d7!important;color:#866115!important}
+#menuPanel.crm-drawer{position:fixed!important;z-index:80!important;left:auto!important;right:12px!important;bottom:calc(78px + env(safe-area-inset-bottom))!important;top:auto!important;width:min(440px,calc(100vw - 24px))!important;max-height:min(72vh,620px)!important;overflow:auto!important;margin:0!important;border-radius:18px!important}
+.more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.more-panel-head{display:flex;justify-content:space-between;align-items:center;padding:4px 3px 10px}
+.more-tile{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;min-height:80px;padding:12px!important;background:#f8faf8!important;color:#173d2d!important;border:1px solid #e2ebe3!important;box-shadow:none!important}
+.more-tile>span{font-size:18px;color:#087348}.more-tile b{font-size:13px}.more-tile small{font-size:11px;color:#708176}
+@media(min-width:900px){
+ body{padding-bottom:0}
+ #app{padding:20px 30px 36px}
+ .tw-bottom-nav{display:none!important}
+ #content{max-width:1120px;margin:0 auto}
+}
+@media(max-width:700px){
+ #app{padding:12px 12px calc(92px + env(safe-area-inset-bottom))}
+ .workspace-header{margin-bottom:12px}
+ #content{min-height:55vh}
+ #menuPanel.crm-drawer{right:8px!important;bottom:calc(76px + env(safe-area-inset-bottom))!important}
+ .tw-dashboard-task{align-items:flex-start}
+}
+
 </style>
 </head>
 <body>
@@ -354,7 +394,7 @@ function ensureSupabaseLibrary(){
   document.head.appendChild(script);
  });
 }
-function goPage(p){page=p;toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p)}
+function goPage(p){page=p;toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
 function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open))}
 document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile)goPage(tile.dataset.morePage);if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
@@ -783,6 +823,8 @@ async function saveProfileSettings(){
 
 function render(){
  const c=$('content');if(!c)return;
+ // Each navigation must replace the previous screen before rendering the selected module.
+ c.replaceChildren();
  if(page==='attendance'){renderAttendance(c);return;}
  if(['projects','tasks','calendar'].includes(page)){renderTeamWorkspace(c);return;}
 
@@ -804,6 +846,8 @@ function render(){
    '</td><td>'+escapeHTML(x.phone)+'</td><td>'+escapeHTML(x.requirement)+
    '</td><td>'+escapeHTML(normStatus(x.status))+'</td><td>'+fmtDate(x.followUpDate)+'</td></tr>').join(''))+
   '</div>';
+  const taskItems=(db.tasks||[]).slice().sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))).slice(0,5);
+  c.innerHTML+='<div class="panel tw-dashboard-tasks"><div class="pagehead"><div><div class="section-kicker">WORK MANAGEMENT</div><h2>My Tasks</h2></div><button class="secondary" onclick="goPage(\'tasks\')">View all</button></div>'+(taskItems.length?taskItems.map(t=>'<div class="tw-dashboard-task"><div class="tw-dashboard-task-icon">✓</div><div class="tw-dashboard-task-main"><strong>'+escapeHTML(t.title||'Untitled task')+'</strong><small>'+escapeHTML(t.project||'General')+' · Due '+fmtDate(t.dueDate)+'</small></div><span class="badge '+(t.status==='Completed'?'tw-status-done':t.status==='In Progress'?'tw-status-progress':'')+'">'+escapeHTML(t.status||'Pending')+'</span></div>').join(''):'<p class="muted">No tasks yet. Create a task to start tracking your work.</p>')+'</div>';
   return;
  }
 
