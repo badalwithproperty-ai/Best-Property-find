@@ -4,7 +4,7 @@ android {
     namespace 'com.bestpropertyfind.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.bestpropertyfind.app'
+        applicationId 'com.teamwork.crm.admin'
         minSdk 23
         targetSdk 35
         versionCode 1
