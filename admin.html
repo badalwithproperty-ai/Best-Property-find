@@ -28,10 +28,25 @@
 const $=s=>document.querySelector(s);
 const titles={overview:'Overview',projects:'Projects & Inventory',leads:'Leads & Customers',bookings:'Bookings & Payments',team:'Users & Teams',partners:'Channel Partners',commission:'Commission Management',attendance:'Attendance',reports:'Reports & Targets',audit:'Audit & Settings'};
 const key='teamwork_admin_console_v1';
+const emptyAdminData=()=>({projects:[{id:1,name:'New Project',location:'Add location',plots:0,price:0,status:'Planning'}],leads:[],bookings:[],team:[],partners:[],commission:[],attendance:[],audit:[]});
 let data;try{data=JSON.parse(localStorage.getItem(key))||null}catch(e){}
-if(!data)data={projects:[{id:1,name:'New Project',location:'Add location',plots:0,price:0,status:'Planning'}],leads:[],bookings:[],team:[],partners:[],commission:[],attendance:[],audit:[]};
-let page='overview',filter='';
-function persist(action,detail){localStorage.setItem(key,JSON.stringify(data));data.audit.unshift({at:new Date().toLocaleString(),action,detail});data.audit=data.audit.slice(0,100);localStorage.setItem(key,JSON.stringify(data));}
+if(!data)data=emptyAdminData();
+let page='overview',filter='',adminAuthorized=false,adminOwnerId=null,adminSaveQueue=Promise.resolve(),cloudAdminReady=false;
+function persist(action,detail){
+ data.audit.unshift({at:new Date().toLocaleString(),action,detail});data.audit=data.audit.slice(0,100);
+ localStorage.setItem(key,JSON.stringify(data));
+ if(cloudAdminReady){
+  adminSaveQueue=adminSaveQueue.then(()=>saveAdminConsoleToCloud()).catch(err=>{console.error(err);toast('Cloud save failed. Please refresh and retry.');});
+ }
+}
+async function saveAdminConsoleToCloud(){
+ if(!adminSupabase||!adminOwnerId||!adminAuthorized)return;
+ const {data:row,error:readError}=await adminSupabase.from('workspace_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
+ if(readError)throw readError;
+ const merged={...(row?.data||{}),adminConsole:data};
+ const {error}=await adminSupabase.from('workspace_state').upsert({owner_id:adminOwnerId,data:merged,updated_at:new Date().toISOString()},{onConflict:'owner_id'});
+ if(error)throw error;
+}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function pill(s){let c=['Approved','Paid','Completed','Available','Active','Converted'].includes(s)?'':(['Pending','Follow-up','Scheduled','Planning'].includes(s)?'warn':(['Rejected','Overdue','Lost'].includes(s)?'red':'blue'));return '<span class="pill '+c+'">'+escapeHtml(s||'Pending')+'</span>'}
@@ -99,7 +114,34 @@ async function removeMemberProfile(userId,fullName){
  }catch(err){alert('Remove नहीं हुआ: '+(err.message||String(err)));}
 }
 
-function render(){let c=$('#content');$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
+async function initializeAdminConsole(){
+ try{
+  if(!window.supabase||!window.supabase.createClient)throw new Error('Supabase library load नहीं हुई।');
+  if(!adminSupabase)adminSupabase=window.supabase.createClient(ADMIN_SUPABASE_URL,ADMIN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
+  if(sessionError)throw sessionError;
+  const session=sessionData.session;
+  if(!session){adminAuthorized=false;render();return;}
+  const {data:profile,error:profileError}=await adminSupabase.from('member_profiles').select('user_id,workspace_owner_id').eq('user_id',session.user.id).maybeSingle();
+  if(profileError)throw profileError;
+  if(!profile||profile.workspace_owner_id!==session.user.id){adminAuthorized=false;render();return;}
+  adminOwnerId=session.user.id;adminAuthorized=true;
+  const {data:row,error:rowError}=await adminSupabase.from('workspace_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
+  if(rowError)throw rowError;
+  if(row?.data?.adminConsole&&typeof row.data.adminConsole==='object'){
+   data={...emptyAdminData(),...row.data.adminConsole};
+  }else{
+   await saveAdminConsoleToCloud();
+  }
+  localStorage.setItem(key,JSON.stringify(data));cloudAdminReady=true;
+  $('#topTitle').textContent='Admin Console · Cloud Synced';
+  render();
+ }catch(err){
+  adminAuthorized=false;
+  const c=$('#content');c.innerHTML='<div class="notice">Admin Console connect नहीं हो पाया: '+escapeHtml(err.message||String(err))+'। मुख्य ऐप में लॉगिन करके फिर कोशिश करें।</div>';
+ }
+}
+function render(){let c=$('#content');if(!adminAuthorized){c.innerHTML='<div class="panel"><h2>Admin login required</h2><p class="muted">इस Admin Console को इस्तेमाल करने के लिए मुख्य TEAM WORK ऐप में Main Admin अकाउंट से लॉगिन करें।</p><a class="btn" href="./">Open TEAM WORK App</a></div>';return;}$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
 if(page==='overview')html=overview();
 if(page==='projects')html=pageHead('Projects & Inventory','Manage projects, plot availability and pricing.','<button onclick="addProject()">＋ Add Project</button>')+'<div class="stats">'+stat('PROJECTS',data.projects.length,'⌂','Project records')+stat('PLOTS TRACKED',data.projects.reduce((n,x)=>n+Number(x.plots||0),0),'▦','Total plot count entered')+stat('ACTIVE PROJECTS',data.projects.filter(x=>x.status==='Active').length,'✓','Marked active')+stat('LEADS',data.leads.length,'◎','Across all projects')+'</div>'+table(['Project','Location','Plots','Price / sq yd','Status','Action'],rowsFor('projects',['name','location','plots','price','status','actions']));
 if(page==='leads')html=pageHead('Leads & Customers','Track source, ownership, follow-up and lead stage.','<button onclick="addLead()">＋ Add Lead</button><button class="secondary" onclick="exportCSV(\'leads\')">Export CSV</button>')+'<div class="filters"><input id="search" placeholder="Search name, phone or project..." value="'+escapeHtml(filter)+'"><select id="stage"><option value="">All stages</option>'+['New','Follow-up','Site Visit','Negotiation','Converted','Lost'].map(x=>'<option>'+x+'</option>').join('')+'</select></div><div id="leadTable"></div>';
@@ -121,5 +163,5 @@ function exportAll(){Object.keys(data).filter(k=>Array.isArray(data[k])&&data[k]
 function backup(){download(JSON.stringify(data,null,2),'team-work-admin-backup.json','application/json')}
 function restore(){let i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=async()=>{try{let v=JSON.parse(await i.files[0].text());if(!v||!Array.isArray(v.leads)||!Array.isArray(v.projects))throw Error('Invalid backup');data={...data,...v};persist('Imported backup','JSON backup');render();toast('Backup imported')}catch(e){alert('Could not import: '+e.message)}};i.click()}
 $('#nav').addEventListener('click',e=>{let b=e.target.closest('button[data-page]');if(b)go(b.dataset.page)});$('#mobileMenu').onclick=()=>$('#sidebar').classList.toggle('open');
-render();
+initializeAdminConsole();
 </script></body></html>
