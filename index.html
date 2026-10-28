@@ -646,7 +646,7 @@ function render(){
    ['Conversion Rate',db.customers.length?((converted/db.customers.length)*100).toFixed(1)+'%':'0%'],
    ['Upcoming Follow-ups',pending],
    ['Activities',db.activities.length]
-  ])+'<div class="panel"><div class="pagehead"><h3>Recent Leads</h3><button onclick="goPage(\'customers\')">View all leads →</button></div>'+
+  ])+'<div class="section-kicker">QUICK ACTIONS</div><div class="tw-quick-actions crm-quick-actions"><button onclick="editRecord(\'customers\')"><span>＋</span><b>Add Lead</b><small>New enquiry</small></button><button onclick="goPage(\'customers\')"><span>♟</span><b>My Leads</b><small>View customers</small></button><button onclick="goPage(\'followups\')"><span>◷</span><b>Follow Up</b><small>Reminders</small></button><button onclick="editRecord(\'activities\')"><span>⌖</span><b>Site Visit</b><small>Log visit</small></button><button onclick="goPage(\'reports\')"><span>▥</span><b>Reports</b><small>Sales results</small></button><button onclick="goPage(\'team\')"><span>♧</span><b>Team</b><small>Team overview</small></button></div><div class="panel"><div class="pagehead"><h3>Recent Leads</h3><button onclick="goPage(\'customers\')">View all leads →</button></div>'+
   tbl(['Name','Phone','Requirement','Status','Follow-up'],
    db.customers.slice().reverse().slice(0,8).map(x=>'<tr><td>'+escapeHTML(x.name)+
    '</td><td>'+escapeHTML(x.phone)+'</td><td>'+escapeHTML(x.requirement)+
@@ -665,7 +665,7 @@ if(page==='settings'){
  '<button class="settings-item" onclick="goPage(\'security\')"><span>♙</span><div><strong>Change Password / App Lock</strong><small>Protect your account and device</small></div><b>›</b></button>'+
  '<button class="settings-item" onclick="goPage(\'notifications\')"><span>♧</span><div><strong>Notification Settings</strong><small>Follow-up reminders and alerts</small></div><b>›</b></button>'+
  '<button class="settings-item" onclick="goPage(\'backup\')"><span>⚙</span><div><strong>App Settings & Backup</strong><small>Export and restore workspace data</small></div><b>›</b></button>'+
- '<button class="settings-item" onclick="goPage(\'about\')"><span>▤</span><div><strong>Privacy & About</strong><small>App information and data handling</small></div><b>›</b></button>'+
+ '<button class="settings-item" onclick="goPage(\'about\')"><span>▤</span><div><strong>Privacy Policy</strong><small>App information and data handling</small></div><b>›</b></button>'+
  '</div><button class="danger" onclick="logout()">Log out</button></div>';return;
 }
 if(page==='profile'){
