@@ -195,6 +195,12 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 .crm-menu-divider{height:1px;background:#e5ece7;margin:8px 4px}.crm-menu-logout{border-top:1px solid #e5ece7;margin-top:10px;padding-top:7px}.crm-menu-logout button{width:100%;display:flex;gap:12px;padding:11px 12px;background:#fff!important;color:#244c39!important;border:0!important}
 @media(max-width:700px){.crm-greeting{padding:16px}.crm-greeting h2{font-size:18px}.crm-drawer{max-height:76vh}}
 
+
+.profile-edit-avatar{display:flex;align-items:center;gap:16px;padding:12px 0 20px}
+.profile-edit-avatar img{width:88px;height:88px;object-fit:cover;border-radius:50%;border:3px solid #dceee2;background:#edf5ef}
+.profile-edit-avatar label{display:block;font-weight:700;margin-bottom:8px}
+.profile-edit-avatar input{max-width:100%;font-size:13px}
+
 </style>
 </head>
 <body>
@@ -668,6 +674,43 @@ async function renderTeamAccess(c){
  window.teamAccessRefreshTimer=setInterval(()=>{if(page==='teamaccess'&&isWorkspaceOwner&&!document.hidden)renderTeamAccess(document.getElementById('content'));},10000);
 }
 
+
+let pendingProfilePhoto='';
+function previewProfilePhoto(event){
+ const file=event.target.files&&event.target.files[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('कृपया image file चुनें।');event.target.value='';return}
+ const reader=new FileReader();
+ reader.onload=function(){
+  const img=new Image();
+  img.onload=function(){
+   const max=320,scale=Math.min(1,max/Math.max(img.width,img.height));
+   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+   canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+   pendingProfilePhoto=canvas.toDataURL('image/jpeg',0.72);
+   const preview=$('profileAvatarPreview');if(preview)preview.src=pendingProfilePhoto;
+  };
+  img.onerror=function(){alert('यह फोटो पढ़ी नहीं जा सकी। दूसरी image चुनें।'};img.src=String(reader.result);
+ };
+ reader.onerror=function(){alert('फोटो पढ़ने में समस्या हुई।')};reader.readAsDataURL(file);
+}
+async function saveProfileSettings(){
+ if(!sb||!user){alert('पहले लॉगिन करें।');return}
+ const name=$('profileNameInput')?.value.trim()||'';
+ const phone=$('profilePhoneInput')?.value.trim()||'';
+ if(!name){alert('कृपया अपना नाम दर्ज करें।');return}
+ const btn=$('saveProfileBtn'),msg=$('profileSaveMessage');if(btn)btn.disabled=true;if(msg)msg.textContent='Saving profile…';
+ try{
+  const data={...(user.user_metadata||{}),full_name:name,phone};
+  if(pendingProfilePhoto)data.avatar_url=pendingProfilePhoto;
+  const {data:updated,error}=await sb.auth.updateUser({data});
+  if(error)throw error;
+  user=updated.user||user;currentProfile=user;pendingProfilePhoto='';
+  if(msg)msg.textContent='Profile saved successfully.';
+  render();
+ }catch(err){if(msg)msg.textContent='Save failed: '+(err.message||String(err))}
+ finally{const b=$('saveProfileBtn');if(b)b.disabled=false}
+}
+
 function render(){
  const c=$('content');if(!c)return;
  if(['projects','tasks','calendar'].includes(page)){renderTeamWorkspace(c);return;}
@@ -707,9 +750,16 @@ if(page==='settings'){
  '</div><button class="danger" onclick="logout()">Log out</button></div>';return;
 }
 if(page==='profile'){
- c.innerHTML='<div class="panel"><div class="pagehead"><h2>Profile Information</h2><button class="secondary" onclick="goPage(\'settings\')">← Settings</button></div><div class="lead-detail-head"><div class="lead-avatar large">♙</div><div><h3>'+escapeHTML(user?.user_metadata?.full_name||user?.email||'Team Member')+'</h3><p>'+escapeHTML(user?.email||'Referral account')+'</p></div></div><div class="lead-info-grid"><div><small>Account email</small><strong>'+escapeHTML(user?.email||'Not provided')+'</strong></div><div><small>Workspace role</small><strong>'+(isWorkspaceOwner?'Main Admin':'Team Member')+'</strong></div><div><small>Access status</small><strong>Signed in</strong></div></div><p class="muted">For changes to referral account details, contact your Main Admin.</p></div>';return;
+ const meta=user?.user_metadata||{};
+ const avatar=meta.avatar_url||'';
+ c.innerHTML='<div class="panel"><div class="pagehead"><h2>Profile Information</h2><button class="secondary" onclick="goPage(\'settings\')">← Settings</button></div>'+
+ '<div class="profile-edit-avatar"><img id="profileAvatarPreview" alt="Profile photo" src="'+escapeHTML(avatar||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22 viewBox=%220 0 120 120%22%3E%3Crect width=%22120%22 height=%22120%22 rx=%2260%22 fill=%22%23e5f2e9%22/%3E%3Ccircle cx=%2260%22 cy=%2242%22 r=%2221%22 fill=%22%23076545%22/%3E%3Cpath d=%22M20 112c2-26 18-40 40-40s38 14 40 40%22 fill=%22%23076545%22/%3E%3C/svg%3E')+'"><div><label for="profilePhotoInput">Profile Photo</label><input id="profilePhotoInput" type="file" accept="image/*" onchange="previewProfilePhoto(event)"><small class="muted">Choose a photo; it will be resized before saving.</small></div></div>'+
+ '<div class="field"><label for="profileNameInput">Full Name</label><input id="profileNameInput" type="text" maxlength="80" value="'+escapeHTML(meta.full_name||meta.name||'')+'" placeholder="Enter your full name" required></div>'+
+ '<div class="field"><label for="profilePhoneInput">Mobile Number</label><input id="profilePhoneInput" type="tel" maxlength="20" value="'+escapeHTML(meta.phone||user?.phone||'')+'" placeholder="Enter mobile number"></div>'+
+ '<div class="field"><label>Account Email</label><input type="email" value="'+escapeHTML(user?.email||'')+'" disabled></div>'+
+ '<div class="field"><label>Workspace Role</label><input value="'+(isWorkspaceOwner?'Main Admin':'Team Member')+'" disabled></div>'+
+ '<div class="actions"><button id="saveProfileBtn" onclick="saveProfileSettings()">Save Profile</button></div><p id="profileSaveMessage" class="muted">Your name, mobile number and photo are saved to your signed-in account profile.</p></div>';return;
 }
-
 if(page==='security'){
  const enabled=localStorage.getItem('twcrm_lock_enabled')==='1';
  c.innerHTML='<div class="panel"><h2>🔒 App Lock & Security</h2><p>6 अंकों का PIN सेट करें। ऐप minimize/background में जाने या दोबारा खुलने पर PIN माँगा जाएगा।</p><div class="field"><label>New PIN (6 digits)</label><input id="lockPin" type="password" inputmode="numeric" maxlength="6" placeholder="6-digit PIN"></div><div class="field"><label>Confirm PIN</label><input id="lockPinConfirm" type="password" inputmode="numeric" maxlength="6" placeholder="Confirm 6-digit PIN"></div><div class="actions"><button onclick="saveAppPin()">Save / Update PIN</button><button class="secondary" onclick="lockApp()">Lock App Now</button><button class="danger" onclick="disableAppPin()">Disable App Lock</button></div><p class="muted">App lock status: <b>'+(enabled?'Enabled':'Not enabled')+'</b></p><p class="setting-note">यह device पर app screen lock है, data encryption नहीं। PIN इसी device/browser में store होता है।</p></div>';return;
