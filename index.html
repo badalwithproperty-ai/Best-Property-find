@@ -114,6 +114,36 @@ th{background:#edf1f7;color:#19385f}tbody tr:hover{background:#f4f7fb}
 .real-estate-hero:before{background:linear-gradient(140deg,#e6d5a0,#c9a65a)}
 .workflow-num{background:#edf1f7;color:#19385f}.tw-progress span{background:linear-gradient(90deg,#19385f,#c9a65a)}
 .badge{background:#edf1f7;color:#19385f}
+
+/* Reference design alignment: Team Work CRM green mobile app */
+:root{--crm-green:#075b3e;--crm-deep:#063b2c;--crm-lime:#a6df65;--crm-gold:#e5bd43;--crm-bg:#f3f7f3}
+body{background:#f3f7f3;color:#20352b;padding-bottom:78px}
+header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-bottom:3px solid #d8b44e!important}
+.brand img{background:#fff;border-radius:14px}
+.brand b{font-size:21px;letter-spacing:-.4px}
+.brand-sub{color:#d5efdd;letter-spacing:1px}
+#auth .card{border-top:4px solid #08784b;border-radius:20px;box-shadow:0 12px 34px #063b2c16}
+#auth h2{color:#06452f}
+#auth .tabs{box-shadow:none;background:#f4f8f4;border:0}
+#auth .tabs button{flex:1}
+#content .real-estate-hero{background:linear-gradient(125deg,#043d2c,#08764b 75%,#16834f)!important;border:0;border-radius:20px}
+#content .hero-pill{background:#e5bd43;color:#173c2a}
+#content .stat{border-top:3px solid #178052;border-radius:15px;box-shadow:0 4px 15px #063b2c0c}
+#content .stat strong{color:#087348}
+#content .panel,#content .card{border-radius:16px}
+#content button{background:linear-gradient(135deg,#08764d,#075638)}
+#content button.secondary{background:#e7f1e9!important;color:#124b36!important;border:1px solid #d5e5d8}
+#content button.danger{background:#fff0ed!important;color:#b42318!important}
+#content h2,#content h3,#app>h1{color:#073e2d}
+#content .workflow-num{background:#e5f3e5;color:#087348}
+#content .tw-progress span{background:linear-gradient(90deg,#08764d,#9bdc58)}
+#content .badge{background:#e5f3e5;color:#0c6842}
+.tw-bottom-nav{position:fixed;z-index:50;left:0;right:0;bottom:0;display:none;grid-template-columns:repeat(5,1fr);gap:3px;padding:7px 6px calc(7px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #dce7df;box-shadow:0 -5px 18px #0a38200d}
+.tw-bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;padding:6px 2px;border-radius:10px;background:transparent!important;box-shadow:none!important;color:#486257!important;font-size:10px;font-weight:700;white-space:nowrap}
+.tw-bottom-nav button span{font-size:19px;line-height:1.1}
+.tw-bottom-nav button.active{background:#e5f2e8!important;color:#075b3e!important}
+@media(max-width:700px){body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}.tw-bottom-nav{display:grid}.wrap{padding:12px}.brand b{font-size:18px}#content .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#content .stat{padding:13px}#content .stat strong{font-size:24px}.tw-bottom-nav{padding-bottom:calc(7px + env(safe-area-inset-bottom))}}
+
 </style>
 </head>
 <body>
@@ -190,6 +220,14 @@ th{background:#edf1f7;color:#19385f}tbody tr:hover{background:#f4f7fb}
 </div>
   <div id="content"></div>
 </main>
+<nav class="tw-bottom-nav" id="twBottomNav" aria-label="Main navigation">
+<button data-page="dashboard" onclick="goPage('dashboard');setBottomNav('dashboard')"><span>⌂</span>Home</button>
+<button data-page="customers" onclick="goPage('customers');setBottomNav('customers')"><span>♟</span>Leads</button>
+<button data-page="followups" onclick="goPage('followups');setBottomNav('followups')"><span>◷</span>Follow Up</button>
+<button data-page="reports" onclick="goPage('reports');setBottomNav('reports')"><span>▥</span>Reports</button>
+<button data-page="more" onclick="toggleMenu();setBottomNav('more')"><span>☷</span>More</button>
+</nav>
+
 <div id="modal"></div>
 
 <script>
@@ -887,6 +925,12 @@ init().catch(e=>{setStatus('Startup error');message(e.message,true)}).finally(()
 </script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker.js').catch(function(err){ console.warn('PWA service worker:', err); }); }); }
+</script>
+<script>
+function setBottomNav(active){
+ document.querySelectorAll('#twBottomNav button').forEach(function(b){b.classList.toggle('active',b.dataset.page===active)});
+}
+document.addEventListener('DOMContentLoaded',function(){setBottomNav('dashboard')});
 </script>
 </body>
 </html>
