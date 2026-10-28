@@ -111,6 +111,7 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
     <div style="font-size:12px;color:#cce6d7;margin-top:7px">Loading your workspace…</div>
   </div>
 </div>
+<script>/* Independent splash failsafe: reveal page even if main app script fails. */setTimeout(function(){var splash=document.getElementById("splash");if(splash)splash.classList.add("hide");},3000);</script>
 <header>
   <div class="brand"><img src="./icons/icon.svg" alt="Team Work CRM logo"><div><b>Team Work CRM</b>
     <div class="brand-sub">TOGETHER WE GROW · LEADS · FOLLOW-UPS · REPORTS</div></div>
