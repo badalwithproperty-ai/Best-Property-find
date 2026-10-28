@@ -263,6 +263,18 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 }
 
 
+.sales-ticker{margin:0 0 14px;padding:12px 0 10px;background:#fff;border:1px solid #e2eee5;border-radius:14px;overflow:hidden;box-shadow:0 3px 14px rgba(20,75,43,.05)}
+.sales-ticker-title{display:flex;align-items:center;gap:7px;padding:0 14px 9px;color:#087348;font-size:11px;font-weight:900;letter-spacing:1px}
+.sales-live-dot{display:inline-block;width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#12a45a;box-shadow:0 0 0 3px #dff6e8}
+.sales-ticker-window{overflow:hidden;width:100%}
+.sales-ticker-track{display:flex;width:max-content;animation:salesTickerMove 42s linear infinite}
+.sales-ticker:hover .sales-ticker-track{animation-play-state:paused}
+.sales-ticker-item{display:flex;align-items:center;gap:8px;white-space:nowrap;padding:8px 18px;border-right:1px solid #e4eee7;color:#4d6657;font-size:12px}
+.sales-ticker-item strong,.sales-ticker-item b{color:#087348;font-weight:850}
+.sales-ticker-item small{color:#77877d;font-size:11px;margin-left:4px}
+.sales-ticker-empty{padding:6px 14px 10px;color:#718077;font-size:12px}
+@keyframes salesTickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.sales-ticker-track{animation:none}}
 /* More opens as a dedicated full-screen page, never as a half drawer */
 #menuPanel.crm-drawer{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;margin:0!important;padding:calc(20px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom))!important;border:0!important;border-radius:0!important;box-sizing:border-box!important;background:#f6f9f6!important;z-index:99999!important;box-shadow:none!important}
 body.more-open{overflow:hidden!important}
@@ -838,6 +850,13 @@ async function saveProfileSettings(){
  finally{const b=$('saveProfileBtn');if(b)b.disabled=false}
 }
 
+function renderSalesTicker(){
+ const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
+ const sales=(db.customers||[]).filter(x=>normStatus(x.status)==='Converted'&&String(x.saleAmount||'').trim()&&String(x.soldSize||'').trim()).filter(x=>{const d=x.saleDate?new Date(x.saleDate+'T23:59:59'):null;return !d||isNaN(d.getTime())||d>=cutoff;}).sort((a,b)=>String(b.saleDate||'').localeCompare(String(a.saleDate||'')));
+ if(!sales.length)return '<section class="sales-ticker"><div class="sales-ticker-title">🟢 RECENT SALES</div><div class="sales-ticker-empty">No sales added yet. Mark a lead as Converted and enter actual sale amount and sold size to show it here.</div></section>';
+ const items=sales.map(x=>'<div class="sales-ticker-item"><span class="sales-live-dot"></span><strong>'+escapeHTML(x.associate||'Sales Team')+'</strong><span>sold</span><b>'+escapeHTML(x.requirement||x.location||'Property')+'</b><span>for</span><b>'+escapeHTML(x.soldSize)+' Sq. Yd.</b><span>·</span><b>₹'+escapeHTML(x.saleAmount)+'</b><small>'+escapeHTML(x.name||'Customer')+(x.saleDate?' · '+escapeHTML(x.saleDate):'')+'</small></div>').join('');
+ return '<section class="sales-ticker"><div class="sales-ticker-title"><span class="sales-live-dot"></span> RECENT SALES · LAST 30 DAYS</div><div class="sales-ticker-window"><div class="sales-ticker-track">'+items+items+'</div></div></section>';
+}
 function getTimeGreeting(){const h=new Date().getHours();if(h>=4&&h<12)return 'Good Morning,';if(h>=12&&h<16)return 'Good Afternoon,';if(h>=16&&h<20)return 'Good Evening,';return 'Good Night,';}
 function updateDashboardGreeting(){const el=$('dashboardGreeting');if(el)el.textContent=getTimeGreeting();}
 setInterval(updateDashboardGreeting,60000);
@@ -854,7 +873,7 @@ function render(){
    .reduce((n,a)=>n+Number(a.count||1),0);
   const converted=db.customers.filter(x=>x.status==='Converted').length;
   const pending=db.customers.filter(x=>x.followUpDate&&x.followUpDate>=today()&&x.status!=='Converted'&&x.status!=='Lost').length;
-  c.innerHTML='<section class="crm-greeting"><div><small id="dashboardGreeting">'+getTimeGreeting()+ '</small><h2>'+escapeHTML((user&&user.user_metadata&&user.user_metadata.full_name)||'Team Member')+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">'+((user&&user.user_metadata&&user.user_metadata.avatar_url)?'<img src="'+escapeHTML(user.user_metadata.avatar_url)+'" alt="Profile photo" onerror="this.style.display=\'none\';this.parentNode.textContent=\'♟\'">':'♟')+'</div></section>'+
+  c.innerHTML=renderSalesTicker()+'<section class="crm-greeting"><div><small id="dashboardGreeting">'+getTimeGreeting()+ '</small><h2>'+escapeHTML((user&&user.user_metadata&&user.user_metadata.full_name)||'Team Member')+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">'+((user&&user.user_metadata&&user.user_metadata.avatar_url)?'<img src="'+escapeHTML(user.user_metadata.avatar_url)+'" alt="Profile photo" onerror="this.style.display=\'none\';this.parentNode.textContent=\'♟\'">':'♟')+'</div></section>'+
   '<div class="workflow-strip"><div class="workflow-step"><span class="workflow-num">01</span><div><b>Capture Leads</b><small>Customers & enquiries</small></div></div><div class="workflow-step"><span class="workflow-num">02</span><div><b>Show Inventory</b><small>Plots & availability</small></div></div><div class="workflow-step"><span class="workflow-num">03</span><div><b>Follow Up</b><small>Calls & reminders</small></div></div><div class="workflow-step"><span class="workflow-num">04</span><div><b>Close & Grow</b><small>Reports & team targets</small></div></div></div>'+
   '<div class="section-kicker">SALES OVERVIEW · LIVE WORKSPACE DATA</div>'+statCards([
    ['Total Leads',db.customers.length],
@@ -991,7 +1010,7 @@ if(page==='followups'){
 
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
  const config={
-  customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
+  customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['saleAmount','Actual Sale Amount'],['soldSize','Sold Size (Sq. Yd.)'],['saleDate','Sale Date'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
   inventory:[['plotNo','Plot No.'],['project','Project Name'],['location','Project Location'],['dimensions','Dimensions (ft.)'],['size','Area (Sq. Yd.)'],['rate','Basic Sales Price'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity'],['count','Call count'],['notes','Notes']]
@@ -1016,7 +1035,7 @@ function openLeadDetails(id){
 function editRecord(kind,id){
  const old=id?db[kind].find(x=>x.id===id)||{}:{};
  const labels={
-  customers:[['name','Customer name'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Assigned To'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
+  customers:[['name','Customer name'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest / Plot'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Salesperson / Assigned To'],['saleAmount','Actual Sale Amount'],['soldSize','Sold Size (Sq. Yd.)'],['saleDate','Sale Date'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
   inventory:[['plotNo','Plot Number'],['project','Project Name'],['location','Project Location'],['dimensions','Dimensions (ft.)'],['size','Area (Sq. Yd.)'],['rate','Basic Sales Price'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
