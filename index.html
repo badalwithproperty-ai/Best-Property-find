@@ -643,7 +643,8 @@ async function load(authUser){
    const {data:existingRequest,error:lookupError}=await withTimeout(sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle(),'Registration request check');
    if(lookupError)throw lookupError;
    if(!existingRequest){
-    const sponsorUserId=meta.sponsor_user_id||null;\n    const {error:requestError}=await withTimeout(sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,sponsor_user_id:sponsorUserId,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'}),'Registration request save');
+    const sponsorUserId=meta.sponsor_user_id||null;
+    const {error:requestError}=await withTimeout(sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,sponsor_user_id:sponsorUserId,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'}),'Registration request save');
     if(requestError)throw requestError;
    }
    if(!membership){
