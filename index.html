@@ -594,7 +594,7 @@ if(page==='followups'){
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
  const config={
   customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
-  inventory:[['project','Project'],['unit','Plot/Flat No.'],['type','Type'],['size','Size'],['location','Location'],['rate','Sale Rate'],['status','Status']],
+  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity'],['count','Call count'],['notes','Notes']]
  };
@@ -613,7 +613,7 @@ function editRecord(kind,id){
  const old=id?db[kind].find(x=>x.id===id)||{}:{};
  const labels={
   customers:[['name','Customer name'],['phone','Phone'],['email','Email'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Lead status'],['associate','Assigned Associate'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
-  inventory:[['project','Project'],['unit','Plot/Flat no.'],['type','Type'],['size','Size'],['location','Location'],['rate','Sale rate'],['status','Inventory status']],
+  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
  };
@@ -624,6 +624,9 @@ function editRecord(kind,id){
   let input='';
   if(kind==='customers'&&k==='status'){
    input='<select name="status">'+statusOptions(normStatus(value))+'</select>';
+  }else if(kind==='inventory'&&k==='status'){
+   const inventoryStatuses=['Available','Working','Token','Sold Out'];
+   input='<select name="status">'+inventoryStatuses.map(s=>'<option value="'+s+'" '+(s===value?'selected':'')+'>'+s+'</option>').join('')+'</select>';
   }else if(k==='followUpDate'){
    input='<input type="date" name="'+k+'" value="'+escapeHTML(value)+'">';
   }else if(k==='followUpTime'){
@@ -633,7 +636,7 @@ function editRecord(kind,id){
   }else if(kind==='activities'&&k==='type'){
    input='<select name="type">'+['Call','Meeting','Site Visit','WhatsApp','Other'].map(s=>'<option '+(s===value?'selected':'')+'>'+s+'</option>').join('')+'</select>';
   }else{
-   input='<input name="'+k+'" value="'+escapeHTML(value)+'" '+(['name','phone','project','unit'].includes(k)?'required':'')+
+   input='<input name="'+k+'" value="'+escapeHTML(value)+'" '+(['name','phone','project'].includes(k)?'required':'')+
     (k==='count'?' type="number" min="1"':'')+'>';
   }
   return '<div class="field"><label>'+escapeHTML(f[1])+'</label>'+input+'</div>';
@@ -699,7 +702,7 @@ function exportAllCSV(){
   const rows=db[kind]||[];
   const headers=[...new Set(rows.flatMap(x=>Object.keys(x)))];
   if(!headers.length){
-   const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','unit','type','size','location','rate','status'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
+   const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','location','rate','size','dimensions','status'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
    headers.push(...defaults);
   }
   const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');
