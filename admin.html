@@ -20,11 +20,13 @@
 </aside>
 <section class="main">
  <header class="top"><div style="display:flex;align-items:center;gap:12px"><button class="secondary mobilemenu" id="mobileMenu">☰</button><div><div class="crumb">TEAM WORK / ADMIN CONSOLE</div><strong id="topTitle">Overview</strong></div></div><div class="topright"><span class="pill blue rolelabel">ADMIN WORKSPACE</span><div class="avatar">AD</div></div></header>
- <main class="content" id="content"></main>
+ <main class="content" id="content"><section class="panel"><h2>TEAM WORK Admin Console</h2><p>Loading secure workspace… If this message remains, the page script or network connection has failed. Refresh this page once.</p></section></main>
 </section>
 </div>
 <div id="modalRoot"></div><div id="toast" class="toast hidden"></div>
 <script>
+window.addEventListener('error',function(e){try{const c=document.querySelector('#content');if(c)c.innerHTML='<section class="panel"><h2>Admin Panel Error</h2><p style="color:#b83a47;white-space:pre-wrap">'+String(e.message||'Unknown JavaScript error').replace(/[&<>]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x]})+'</p><p>Page reload करें। Error बना रहे तो यह message developer को भेजें।</p></section>';}catch(_){}});
+window.addEventListener('unhandledrejection',function(e){try{const c=document.querySelector('#content');if(c)c.innerHTML='<section class="panel"><h2>Admin Panel Connection Error</h2><p style="color:#b83a47;white-space:pre-wrap">'+String(e.reason&&e.reason.message||e.reason||'Connection failed').replace(/[&<>]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x]})+'</p></section>';}catch(_){}});
 const $=s=>document.querySelector(s);
 const titles={overview:'Overview',projects:'Projects & Inventory',leads:'Leads & Customers',bookings:'Bookings & Payments',team:'Users & Teams',partners:'Channel Partners',commission:'Commission Management',attendance:'Attendance',reports:'Reports & Targets',audit:'Audit & Settings'};
 const key='teamwork_admin_console_v1';
