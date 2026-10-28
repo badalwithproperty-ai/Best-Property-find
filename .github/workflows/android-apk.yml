@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build TEAM WORK Admin Android App
 on:
   push:
     paths:
@@ -24,14 +24,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build APK
+      - name: Build Admin APK
         run: gradle --no-daemon -p android-app assembleDebug
-      - name: Publish APK download
+      - name: Publish Admin APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-v1.0.0
-          name: Best Property Find Android App v1.0.0
-          body: Installable Android APK for Best Property Find.
-          make_latest: true
+          tag_name: team-work-admin-v1.0.0
+          name: TEAM WORK Admin Android App v1.0.0
+          body: Separate Android Admin app for TEAM WORK CRM. Sign-in and permissions are enforced by the linked Admin Console.
+          make_latest: false
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
