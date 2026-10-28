@@ -661,6 +661,12 @@ async function load(authUser){
    const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
   }
+  const profileQuery=isWorkspaceOwner?sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId):sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId).eq('sponsor_user_id',authUser.id);
+  const {data:assignableProfiles,error:assignableProfilesError}=await withTimeout(profileQuery,'Assignable team members load');
+  if(assignableProfilesError)throw assignableProfilesError;
+  const profileById=new Map((assignableProfiles||[]).map(p=>[p.user_id,p]));
+  teamMembers=(teamMembers||[]).map(m=>({...m,...(profileById.get(m.member_user_id)||{})}));
+  if(!isWorkspaceOwner)teamMembers=(assignableProfiles||[]).filter(p=>p.approval_status==='approved').map(p=>({member_user_id:p.user_id,name:p.full_name,full_name:p.full_name,role:p.designation}));
   const {data:secureLeadRows,error:secureLeadError}=await withTimeout(sb.from('team_leads').select('id,workspace_owner_id,assigned_to,assigned_by,lead_data,created_at,updated_at').eq('workspace_owner_id',workspaceOwnerId),'Secure lead assignments load');
   if(secureLeadError)throw secureLeadError;
   const secureCustomers=(secureLeadRows||[]).map(r=>({...((r.lead_data&&typeof r.lead_data==='object')?r.lead_data:{}),id:r.id,_assignedTo:r.assigned_to,assignedTo:r.assigned_to,_assignedBy:r.assigned_by}));
@@ -1046,18 +1052,23 @@ function openLeadDetails(id){
 function editRecord(kind,id){
  const old=id?db[kind].find(x=>x.id===id)||{}:{};
  const labels={
-  customers:[['name','Customer name'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest / Plot'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Salesperson / Assigned To'],['saleAmount','Actual Sale Amount'],['soldSize','Sold Size (Sq. Yd.)'],['saleDate','Sale Date'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
+  customers:[['name','Customer name'],['assignedTo','Assign Lead To'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest / Plot'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Salesperson / Assigned To'],['saleAmount','Actual Sale Amount'],['soldSize','Sold Size (Sq. Yd.)'],['saleDate','Sale Date'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
   inventory:[['plotNo','Plot Number'],['project','Project Name'],['location','Project Location'],['dimensions','Dimensions (ft.)'],['size','Area (Sq. Yd.)'],['rate','Basic Sales Price'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
  };
  let fields=labels[kind];if(!fields)return;
  if(kind==='customers'&&!isWorkspaceOwner)fields=fields.filter(f=>!['saleAmount','soldSize','saleDate'].includes(f[0]));
+ if(kind==='customers'&&!isWorkspaceOwner&&!(teamMembers||[]).length)fields=fields.filter(f=>f[0]!=='assignedTo');
  const inputs=fields.map(f=>{
   const k=f[0];
   const value=old[k]??(k==='date'?today():k==='count'?1:k==='status'&&kind==='customers'?'New':'');
   let input='';
-  if(kind==='customers'&&k==='status'){
+  if(kind==='customers'&&k==='assignedTo'){
+   const choices=[{member_user_id:user.id,full_name:(user.user_metadata&&user.user_metadata.full_name)||user.email||'Me'},...(teamMembers||[])];
+   const unique=[...new Map(choices.map(m=>[m.member_user_id,m])).values()];
+   input='<select name="assignedTo">'+unique.map(m=>'<option value="'+escapeHTML(m.member_user_id)+'" '+((value||old._assignedTo||user.id)===m.member_user_id?'selected':'')+'>'+escapeHTML(m.full_name||m.name||m.email||'Team member')+'</option>').join('')+'</select>';
+  }else if(kind==='customers'&&k==='status'){
    input='<select name="status">'+statusOptions(normStatus(value))+'</select>';
   }else if(kind==='inventory'&&k==='status'){
    const inventoryStatuses=['Available','Booking','Token','Sold Out'];
