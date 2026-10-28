@@ -296,6 +296,7 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 <button onclick="goPage('activities');toggleMenu(false)">◆ <span>Site Visit</span></button>
 <button onclick="goPage('reports');toggleMenu(false)">▥ <span>Reports</span></button>
 <button onclick="goPage('team');toggleMenu(false)">♧ <span>Team</span></button>
+<button onclick="goPage('attendance');toggleMenu(false)">◷ <span>Attendance</span></button>
 <button onclick="goPage('settings');toggleMenu(false)">⚙ <span>Settings</span></button>
 <div class="crm-menu-divider"></div>
 <button onclick="goPage('inventory');toggleMenu(false)">▦ <span>Property Inventory</span></button>
@@ -602,15 +603,15 @@ async function load(authUser){
   if(error)throw error;
   const saved=row?.data||{};
   workspaceExtras={...saved};
-  ['customers','inventory','associates','activities','projects','tasks'].forEach(k=>delete workspaceExtras[k]);
+  ['customers','inventory','associates','activities','projects','tasks','attendance'].forEach(k=>delete workspaceExtras[k]);
   if(isWorkspaceOwner){
    const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
   }
-  db={customers:Array.isArray(saved.customers)?saved.customers:[],inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[]};
+  db={customers:Array.isArray(saved.customers)?saved.customers:[],inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
-  setStatus('Cloud connected');render();
+  setStatus('Cloud connected');render();maybeAutoCheckIn();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
@@ -666,6 +667,78 @@ function addProject(){const name=prompt('Project name');if(!name||!name.trim())r
 function copyTeamReport(){const t=db.tasks,done=t.filter(x=>x.status==='Completed').length;const v='TEAM WORK REPORT\nProjects: '+db.projects.length+'\nTasks: '+t.length+'\nCompleted: '+done+'\nRemaining: '+(t.length-done)+'\nCompletion: '+(t.length?Math.round(done/t.length*100):0)+'%';if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>alert('Report copied')).catch(()=>prompt('Copy report',v));else prompt('Copy report',v)}
 async function deleteTask(id){if(!confirm('Delete this task?'))return;const old=db.tasks;db.tasks=old.filter(t=>t.id!==id);if(!await save())db.tasks=old}
 function filterTasksByProject(n){window.taskProjectFilter=n;goPage('tasks')}
+
+function localDateTime(){
+ const d=new Date(),pad=n=>String(n).padStart(2,'0');
+ return {date:d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),time:pad(d.getHours())+':'+pad(d.getMinutes()),stamp:d.toISOString()};
+}
+function getEmployeeName(){
+ return (user&&(user.user_metadata?.full_name||user.user_metadata?.name||user.email))||'Team Member';
+}
+function captureAttendanceLocation(callback){
+ if(!navigator.geolocation){callback({ok:false,message:'इस डिवाइस/ऐप में GPS उपलब्ध नहीं है।'});return}
+ navigator.geolocation.getCurrentPosition(pos=>{
+  const lat=pos.coords.latitude.toFixed(6),lon=pos.coords.longitude.toFixed(6),accuracy=Math.round(pos.coords.accuracy||0);
+  callback({ok:true,value:lat+', '+lon+' (±'+accuracy+' m)',lat:Number(lat),lon:Number(lon),accuracy,capturedAt:new Date().toISOString()});
+ },err=>callback({ok:false,message:err.code===1?'Location permission अस्वीकार है। फोन की App permissions में Location Allow करें।':err.code===2?'Location उपलब्ध नहीं है। GPS चालू करके फिर कोशिश करें।':'Location मिलने में समय लगा। फिर कोशिश करें।'}),{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+}
+function maybeAutoCheckIn(){
+ if(localStorage.getItem('twcrm_attendance_consent')!=='yes'||!user||!db||!Array.isArray(db.attendance))return;
+ const now=localDateTime();
+ const existing=db.attendance.find(a=>a.date===now.date&&(a.userId===user.id||a.employee===getEmployeeName())&&!a.checkOut);
+ if(existing)return;
+ const already=db.attendance.find(a=>a.date===now.date&&(a.userId===user.id||a.employee===getEmployeeName()));
+ if(already)return;
+ const rec={id:'att-'+Date.now(),userId:user.id,employee:getEmployeeName(),date:now.date,checkIn:now.time,checkOut:'',site:'App opened (auto)',location:'Location not captured',status:now.time>'10:00'?'Late':'Present',createdAt:now.stamp,source:'Auto on app open'};
+ db.attendance.unshift(rec);
+ captureAttendanceLocation(loc=>{
+  const current=db.attendance.find(a=>a.id===rec.id);if(!current)return;
+  if(loc.ok)current.location=loc.value;
+  else current.location='Not available: '+loc.message;
+  save();
+ });
+ save();
+}
+function enableAttendanceAuto(){
+ if(!confirm('Attendance auto check-in चालू करें? आपकी सहमति के बाद ऐप खुलने पर आज की पहली entry का समय और, अनुमति मिलने पर, GPS location रिकॉर्ड होगी। यह ऑफिस में मौजूद होने का प्रमाण अपने-आप नहीं है; Site/Office नाम सही भरें।'))return;
+ localStorage.setItem('twcrm_attendance_consent','yes');
+ alert('Auto attendance consent enabled. Location permission पूछे जाने पर Allow करें। आज की entry न हो तो अगली बार ऐप खुलने पर auto check-in होगा।');
+ renderAttendance($('content'));
+}
+function manualAttendanceForm(id){
+ const old=id?db.attendance.find(a=>a.id===id)||{}:{};
+ const now=localDateTime();
+ $('modal').innerHTML='<div class="modalback" id="modalBack"><div class="modal"><h2>'+(id?'Edit Attendance':'Record Attendance')+'</h2><form id="attendanceForm"><div class="grid"><div class="field"><label>Employee</label><input name="employee" required value="'+escapeHTML(old.employee||getEmployeeName())+'"></div><div class="field"><label>Date</label><input type="date" name="date" required value="'+escapeHTML(old.date||now.date)+'"></div><div class="field"><label>Entry / Check-in time</label><input type="time" name="checkIn" value="'+escapeHTML(old.checkIn||now.time)+'"></div><div class="field"><label>Exit / Check-out time</label><input type="time" name="checkOut" value="'+escapeHTML(old.checkOut||'')+'"></div><div class="field"><label>Office / Meeting / Site</label><input name="site" placeholder="Office, client meeting, site visit" value="'+escapeHTML(old.site||'')+'" required></div><div class="field"><label>Location / GPS coordinates</label><input id="attendanceLocation" name="location" placeholder="Enter location or capture GPS" value="'+escapeHTML(old.location||'')+'"></div><div class="field"><label>Status</label><select name="status"><option '+((old.status||'Present')==='Present'?'selected':'')+'>Present</option><option '+(old.status==='Late'?'selected':'')+'>Late</option><option '+(old.status==='Meeting'?'selected':'')+'>Meeting</option><option '+(old.status==='Site Visit'?'selected':'')+'>Site Visit</option><option '+(old.status==='Absent'?'selected':'')+'>Absent</option></select></div></div><p class="muted" id="attendanceLocationMsg">GPS only runs when you press Capture GPS and grant permission.</p><div class="actions"><button type="button" class="secondary" id="captureAttendanceGps">⌖ Capture GPS</button><button type="submit">Save Attendance</button><button type="button" class="secondary" id="cancelAttendance">Cancel</button></div></form></div></div>';
+ $('cancelAttendance').onclick=()=>$('modal').innerHTML='';
+ $('modalBack').onclick=e=>{if(e.target===$('modalBack'))$('modal').innerHTML=''};
+ $('captureAttendanceGps').onclick=()=>captureAttendanceLocation(loc=>{const m=$('attendanceLocationMsg');if(loc.ok){$('attendanceLocation').value=loc.value;if(m)m.textContent='GPS captured: '+loc.value}else if(m)m.textContent=loc.message});
+ $('attendanceForm').onsubmit=async e=>{
+  e.preventDefault();const v=Object.fromEntries(new FormData(e.target).entries());
+  if(v.checkOut&&v.checkIn&&v.checkOut<v.checkIn&&!confirm('Exit time entry time से पहले है। फिर भी save करें?'))return;
+  const oldList=db.attendance;const rec={id:id||'att-'+Date.now(),userId:old.userId||user.id,...v,createdAt:old.createdAt||new Date().toISOString(),source:'Manual'};
+  db.attendance=id?db.attendance.map(a=>a.id===id?rec:a):[rec,...db.attendance];
+  $('modal').innerHTML='';if(!await save())db.attendance=oldList;else goPage('attendance');
+ };
+}
+function finishAttendance(id){
+ const a=db.attendance.find(x=>x.id===id);if(!a)return;
+ const now=localDateTime();const old=a.checkOut;a.checkOut=now.time;
+ if(!a.site)a.site='Office / Site';
+ save().then(ok=>{if(!ok)a.checkOut=old;else render()});
+}
+function renderAttendance(c){
+ const records=(db.attendance||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.checkIn||'').localeCompare(a.checkIn||''));
+ const today=localDateTime().date,consented=localStorage.getItem('twcrm_attendance_consent')==='yes';
+ const rows=records.map(a=>'<tr><td>'+escapeHTML(a.employee||'—')+'</td><td>'+escapeHTML(a.date||'—')+'</td><td>'+escapeHTML(a.checkIn||'—')+'</td><td>'+escapeHTML(a.checkOut||'—')+'</td><td>'+escapeHTML((a.site||'')+(a.location?' · '+a.location:''))+'</td><td><span class="badge">'+escapeHTML(a.status||'Present')+'</span></td><td><button class="small secondary" data-edit-attendance="'+escapeHTML(a.id)+'">Edit</button> '+(!a.checkOut&&a.date===today?'<button class="small" data-checkout-attendance="'+escapeHTML(a.id)+'">Check-out</button>':'')+' <button class="small danger" data-delete-attendance="'+escapeHTML(a.id)+'">Delete</button></td></tr>').join('');
+ c.innerHTML='<div class="pagehead"><div><div class="section-kicker">TEAM WORKSPACE</div><h2>Attendance</h2><p class="muted">Daily check-in / check-out records and visit tracking.</p></div><button id="addAttendanceBtn">＋ Record Attendance</button></div><div class="panel"><h3>Automatic check-in</h3><p class="muted">With your consent, the app can create one first-entry record per day when you open it. GPS is requested separately; location may be unavailable if permission is denied. Opening the app alone does not prove office presence.</p><div class="actions"><button id="attendanceConsentBtn" class="'+(consented?'secondary':'')+'">'+(consented?'✓ Auto check-in enabled':'Enable auto check-in')+'</button><button id="captureAttendanceNow" class="secondary">⌖ Capture current GPS</button></div><p class="muted">'+(consented?'Consent enabled on this device.':'Auto check-in is off until you enable it.')+'</p></div><div class="panel"><div class="pagehead"><h3>Attendance records</h3><span class="badge">'+records.length+' records</span></div><div class="table-wrap"><table><thead><tr><th>Employee</th><th>Date</th><th>Check-in</th><th>Check-out</th><th>Location / Site</th><th>Status</th><th>Action</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">No records yet. Use Record Attendance to create a record.</td></tr>')+'</tbody></table></div></div>';
+ const add=$('addAttendanceBtn');if(add)add.onclick=()=>manualAttendanceForm();
+ const consent=$('attendanceConsentBtn');if(consent)consent.onclick=()=>{if(consented){localStorage.removeItem('twcrm_attendance_consent');renderAttendance(c)}else enableAttendanceAuto()};
+ const gps=$('captureAttendanceNow');if(gps)gps.onclick=()=>captureAttendanceLocation(loc=>alert(loc.ok?'Current GPS: '+loc.value:loc.message));
+ c.querySelectorAll('[data-edit-attendance]').forEach(b=>b.onclick=()=>manualAttendanceForm(b.dataset.editAttendance));
+ c.querySelectorAll('[data-checkout-attendance]').forEach(b=>b.onclick=()=>finishAttendance(b.dataset.checkoutAttendance));
+ c.querySelectorAll('[data-delete-attendance]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this attendance record?'))return;const old=db.attendance;db.attendance=old.filter(a=>a.id!==b.dataset.deleteAttendance);if(!await save())db.attendance=old;else render()});
+}
+
 function renderTeamWorkspace(c){
  const ts=db.tasks||[],ps=db.projects||[],done=ts.filter(t=>t.status==='Completed').length,active=ts.filter(t=>t.status==='In Progress').length,pending=ts.filter(t=>t.status==='Pending').length,pct=ts.length?Math.round(done/ts.length*100):0,members=(db.associates||[]).length+(teamMembers||[]).length;
  if(page==='projects'){c.innerHTML='<div class="pagehead"><h2>Projects</h2><button onclick="addProject()">+ New Project</button></div><div class="tw-project-grid">'+(ps.length?ps.map(p=>{const a=ts.filter(t=>t.project===p.name),d=a.filter(t=>t.status==='Completed').length,n=a.length?Math.round(d/a.length*100):0;return '<div class="panel"><h3>'+escapeHTML(p.name)+'</h3><p class="muted">'+a.length+' tasks · '+d+' completed</p><div class="tw-progress"><span style="width:'+n+'%"></span></div><p>'+n+'% complete</p><button class="secondary" onclick="filterTasksByProject('+JSON.stringify(p.name)+')">View tasks</button></div>'}).join(''):'<div class="panel">No projects yet.</div>')+'</div>';return}
@@ -728,6 +801,7 @@ async function saveProfileSettings(){
 
 function render(){
  const c=$('content');if(!c)return;
+ if(page==='attendance'){renderAttendance(c);return;}
  if(['projects','tasks','calendar'].includes(page)){renderTeamWorkspace(c);return;}
 
  if(page==='dashboard'){
