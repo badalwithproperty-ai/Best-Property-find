@@ -275,7 +275,7 @@ function showReferralLogin(){
  $('referralForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function referralApi(payload,token){
- const response=await fetch(SUPABASE_URL+'/functions/v1/referral-auth-',{
+ const response=await fetch(SUPABASE_URL+'/functions/v1/referral-auth',{
   method:'POST',
   headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,...(token?{Authorization:'Bearer '+token}:{})},
   body:JSON.stringify(payload)
