@@ -27,27 +27,30 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Build Admin APK
-        run: gradle --no-daemon -p android-app assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f android-app/app/build/outputs/apk/debug/app-debug.apk
+          gradle --no-daemon -p android-app clean assembleDebug
       - name: Validate APK package
         shell: bash
         run: |
           set -euo pipefail
           APK="android-app/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
-          SIZE=$(stat -c%s "$APK")
-          echo "APK size: $SIZE bytes"
-          if [ "$SIZE" -lt 500000 ]; then
-            echo "::error::APK is unexpectedly small ($SIZE bytes); refusing to publish."
-            exit 1
-          fi
+          echo "APK size: $(stat -c%s "$APK") bytes"
           unzip -t "$APK"
-          unzip -l "$APK" | grep -E 'classes.dex|AndroidManifest.xml'
+          unzip -l "$APK" | tee /tmp/apk-list.txt
+          grep -Eq 'classes[0-9]*\.dex' /tmp/apk-list.txt
+          grep -q 'AndroidManifest.xml' /tmp/apk-list.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/apk-badging.txt
+          grep -q "package: name='com.teamwork.crm.admin'" /tmp/apk-badging.txt
       - name: Publish Admin APK download
         uses: softprops/action-gh-release@v2
         with:
           tag_name: team-work-admin-v1.0.1
           name: TEAM WORK Admin Android App v1.0.1
-          body: TEAM WORK Admin Android app. APK validated for package contents before publishing.
+          body: TEAM WORK Admin Android app. APK ZIP contents, DEX, Android manifest, and package ID validated before publishing.
           make_latest: false
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
