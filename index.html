@@ -149,6 +149,7 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
     </form>
     <div id="refMsg" class="msg hidden" role="status" aria-live="polite"></div>
     <div id="legacyLogin" class="hidden">
+    <div class="actions"><button type="button" class="secondary" onclick="showReferralLogin()">← Back to Referral Login</button></div>
     <h2 id="authTitle">Old Email Login</h2>
     <p class="muted">पुराने account के लिए email और password इस्तेमाल करें।</p>
     <form id="authForm">
@@ -234,6 +235,9 @@ function referralMessage(text,isError=false){
 }
 function setReferralMode(next){
  referralMode=next;
+ $('referralForm').classList.remove('hidden');
+ $('legacyLogin').classList.add('hidden');
+ $('legacyLogin').style.display='';
  $('refLoginFields').classList.toggle('hidden',next!=='login');
  $('refRegisterFields').classList.toggle('hidden',next!=='register');
  $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
@@ -243,9 +247,17 @@ function setReferralMode(next){
  $('refMsg').classList.add('hidden');
 }
 function showLegacyLogin(){
- $('legacyLogin').classList.remove('hidden');
  $('referralForm').classList.add('hidden');
- $('refLoginTab').classList.add('hidden');$('refRegisterTab').classList.add('hidden');
+ $('legacyLogin').classList.remove('hidden');
+ $('legacyLogin').style.display='block';
+ $('legacyLogin').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function showReferralLogin(){
+ $('legacyLogin').classList.add('hidden');
+ $('legacyLogin').style.display='';
+ $('referralForm').classList.remove('hidden');
+ setReferralMode('login');
+ $('referralForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function referralApi(payload,token){
  const response=await fetch(SUPABASE_URL+'/functions/v1/referral-auth-',{
