@@ -337,7 +337,7 @@ body.more-open #menuPanel.crm-drawer{display:block!important}
       <div id="otpFields" class="hidden">
         <div class="field"><label>SMS OTP</label><input id="refOtp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter OTP"></div>
       </div>
-      <div class="actions"><button id="refSubmit" type="submit">Login</button><button id="verifyOtpBtn" type="button" class="secondary hidden" onclick="verifyReferralOtp()">Verify OTP</button></div>
+      <div class="actions"><button id="refSubmit" type="submit">Login</button><button id="sendLoginOtpBtn" type="button" class="secondary" onclick="sendReferralLoginOtp()">Login with SMS OTP</button><button id="verifyOtpBtn" type="button" class="secondary hidden" onclick="verifyReferralOtp()">Verify OTP</button></div>
     </form>
     <div id="refMsg" class="msg hidden" role="status" aria-live="polite"></div>
     <div id="legacyLogin" class="hidden">
@@ -432,6 +432,7 @@ function normStatus(s){return STATUSES.includes(s)?s:'New'}
 
 let referralMode='login';
 let pendingReferralPhone='';
+let loginOtpMode=false;
 function referralMessage(text,isError=false){
  const box=$('refMsg');box.textContent=text;box.classList.remove('hidden','err');if(isError)box.classList.add('err');
 }
@@ -492,12 +493,28 @@ $('referralForm').addEventListener('submit',async e=>{
  }catch(err){referralMessage(err.message||'Request failed',true)}
  finally{authBusy=false;$('refSubmit').disabled=false}
 });
+async function sendReferralLoginOtp(){
+ if(authBusy)return;
+ const referralId=$('refLoginId').value.trim();
+ if(!/^\d{6}$/.test(referralId)){referralMessage('पहले 6-digit Referral ID भरें।',true);return}
+ authBusy=true;$('sendLoginOtpBtn').disabled=true;
+ try{
+  const result=await referralApi({action:'send_login_otp',referral_id:referralId});
+  loginOtpMode=true;
+  $('otpFields').classList.remove('hidden');$('verifyOtpBtn').classList.remove('hidden');
+  $('refSubmit').classList.add('hidden');$('sendLoginOtpBtn').classList.add('hidden');
+  $('refOtp').value='';
+  referralMessage(result.message+' OTP डालकर Verify OTP दबाएँ।');
+ }catch(err){referralMessage(err.message||'OTP भेजने में समस्या हुई।',true)}
+ finally{authBusy=false;$('sendLoginOtpBtn').disabled=false}
+}
 async function verifyReferralOtp(){
  if(authBusy)return;
  const phone=pendingReferralPhone||$('refPhone').value.trim().replace(/[\s()-]/g,'');
  authBusy=true;$('verifyOtpBtn').disabled=true;
  try{
-  const result=await referralApi({action:'verify_otp',phone,token:$('refOtp').value.trim()});
+  const result=loginOtpMode ? await referralApi({action:'verify_login_otp',referral_id:$('refLoginId').value.trim(),token:$('refOtp').value.trim()}) : await referralApi({action:'verify_otp',phone,token:$('refOtp').value.trim()});
+  if(loginOtpMode){if(!sb)throw new Error('Supabase connection तैयार नहीं है। Refresh करें।');const {error}=await sb.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});if(error)throw error;await load(result.user);return;}
   referralMessage('Mobile verify हो गया। Referral ID: '+result.referral_id+'. Main Admin approval का इंतज़ार करें; approval से पहले CRM access नहीं मिलेगा।');
   $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
   $('refSubmit').classList.remove('hidden');setReferralMode('login');
