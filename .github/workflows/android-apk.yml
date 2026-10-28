@@ -68,9 +68,9 @@ jobs:
       - name: Publish Admin APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: team-work-admin-v1.0.3
-          name: TEAM WORK Admin Android App v1.0.3
-          body: TEAM WORK Admin Android app. Built with the official TEAM WORK Real Estate CRM logo as launcher icon; APK contents and package identity validated before publishing.
+          tag_name: team-work-admin-v1.0.4
+          name: TEAM WORK Admin Android App v1.0.4
+          body: TEAM WORK Admin Android app v1.0.4. Updated to load the latest TEAM WORK CRM Admin Panel; APK package, DEX, manifest, and launcher icon are validated before publishing.
           make_latest: false
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
