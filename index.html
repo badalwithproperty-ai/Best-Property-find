@@ -216,6 +216,12 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 .crm-drawer-avatar{overflow:hidden;flex:0 0 39px;padding:0}
 .crm-drawer-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
 
+
+/* Clean focused workspace navigation */
+.workspace-header{justify-content:space-between;margin-bottom:14px;padding:0 2px}.workspace-online{display:flex;align-items:center;gap:6px;color:#46745d;font-size:11px;font-weight:700}.workspace-online i{width:7px;height:7px;border-radius:50%;background:#20a464;display:inline-block}
+#menuPanel.crm-drawer{position:fixed;z-index:80;left:12px;right:12px;top:auto;bottom:calc(78px + env(safe-area-inset-bottom));width:auto;max-height:70vh;overflow:auto;padding:15px;background:#fff;border:1px solid #dce8df;border-radius:18px;box-shadow:0 16px 50px #102a1c33}
+.more-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.more-panel-head strong{font-size:17px}.more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.more-tile{display:flex!important;flex-direction:column;align-items:flex-start;gap:6px;min-height:88px;padding:13px!important;border:1px solid #e1ebe4!important;border-radius:13px!important;background:#f8fbf9!important;color:#163b2a!important;box-shadow:none!important;text-align:left}.more-tile span{font-size:20px}.more-tile b{font-size:13px}.more-tile small{font-size:11px;color:#708478}
+@media(max-width:700px){.workspace-header{margin-bottom:10px}.more-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -286,32 +292,8 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 
 <main id="app" class="wrap hidden">
   <h1 id="welcome">TEAM WORK · My Workspace</h1>
-  <div class="pagehead menu-toggle"><div><div class="section-kicker">WORKSPACE</div><p class="muted">Your team overview, projects, tasks and progress in one place.</p></div><button onclick="toggleMenu()" aria-expanded="false" id="menuButton">☰ Menu</button></div>
-  <div id="menuPanel" class="menu-panel hidden crm-drawer" aria-label="Main menu">
-<div class="crm-drawer-brand"><img src="./icons/icon.svg" alt="Team Work CRM"><div><strong>Team Work CRM</strong><small>TOGETHER WE GROW</small></div></div>
-<div class="crm-drawer-user"><span class="crm-drawer-avatar" id="drawerAvatar">♟</span><div><strong id="drawerName">Team Member</strong><small>CRM Workspace</small></div></div>
-<button class="crm-menu-active" onclick="goPage('dashboard');toggleMenu(false)">⌂ <span>Dashboard</span></button>
-<button onclick="goPage('customers');toggleMenu(false)">♟ <span>Leads</span></button>
-<button onclick="goPage('followups');toggleMenu(false)">◷ <span>Follow Up</span></button>
-<button onclick="goPage('activities');toggleMenu(false)">◆ <span>Site Visit</span></button>
-<button onclick="goPage('reports');toggleMenu(false)">▥ <span>Reports</span></button>
-<button onclick="goPage('team');toggleMenu(false)">♧ <span>Team</span></button>
-<button onclick="goPage('attendance');toggleMenu(false)">◷ <span>Attendance</span></button>
-<button onclick="goPage('settings');toggleMenu(false)">⚙ <span>Settings</span></button>
-<div class="crm-menu-divider"></div>
-<button onclick="goPage('inventory');toggleMenu(false)">▦ <span>Property Inventory</span></button>
-<button onclick="goPage('projects');toggleMenu(false)">▦ <span>Projects</span></button>
-<button onclick="goPage('tasks');toggleMenu(false)">✓ <span>Tasks</span></button>
-<button onclick="goPage('associates');toggleMenu(false)">♙ <span>Associates</span></button>
-<button onclick="goPage('calendar');toggleMenu(false)">▦ <span>Calendar</span></button>
-<button onclick="goPage('notifications');toggleMenu(false)">♧ <span>Notifications</span></button>
-<button onclick="goPage('teamaccess');toggleMenu(false)">♧ <span>Team Access</span></button>
-<button onclick="goPage('backup');toggleMenu(false)">▣ <span>Backup & Data</span></button>
-<button onclick="goPage('security');toggleMenu(false)">♢ <span>Settings & Security</span></button>
-<button onclick="goPage('contact');toggleMenu(false)">☎ <span>Support</span></button>
-<button onclick="window.location.href='./admin.html?v=2'">▣ <span>Admin Console ↗</span></button>
-<div class="crm-menu-logout"><button onclick="logout()">⇥ <span>Logout</span></button></div>
-</div>
+  <div class="pagehead workspace-header"><div><div class="section-kicker">TEAM WORK CRM</div><p class="muted" id="workspacePageLabel">Your workspace</p></div><span class="workspace-online"><i></i> Workspace</span></div>
+  <div id="menuPanel" class="menu-panel hidden crm-drawer" aria-label="More options"><div class="more-panel-head"><strong>More options</strong><button id="closeMoreBtn" class="secondary" type="button">Close</button></div><div class="more-grid"><button type="button" class="more-tile" data-more-page="followups"><span>◷</span><b>Follow-ups</b><small>Open Follow-ups</small></button><button type="button" class="more-tile" data-more-page="activities"><span>⌖</span><b>Site Visit</b><small>Open Site Visit</small></button><button type="button" class="more-tile" data-more-page="team"><span>♧</span><b>Team</b><small>Open Team</small></button><button type="button" class="more-tile" data-more-page="attendance"><span>◷</span><b>Attendance</b><small>Open Attendance</small></button><button type="button" class="more-tile" data-more-page="settings"><span>⚙</span><b>Settings</b><small>Open Settings</small></button><button type="button" class="more-tile" data-more-page="inventory"><span>▦</span><b>Property Inventory</b><small>Open Property Inventory</small></button><button type="button" class="more-tile" data-more-page="projects"><span>▤</span><b>Projects</b><small>Open Projects</small></button><button type="button" class="more-tile" data-more-page="associates"><span>♙</span><b>Associates</b><small>Open Associates</small></button><button type="button" class="more-tile" data-more-page="calendar"><span>▦</span><b>Calendar</b><small>Open Calendar</small></button><button type="button" class="more-tile" data-more-page="notifications"><span>♢</span><b>Notifications</b><small>Open Notifications</small></button><button type="button" class="more-tile" data-more-page="teamaccess"><span>♧</span><b>Team Access</b><small>Open Team Access</small></button><button type="button" class="more-tile" data-more-page="backup"><span>▣</span><b>Backup & Data</b><small>Open Backup & Data</small></button><button type="button" class="more-tile" data-more-page="security"><span>⚙</span><b>Settings & Security</b><small>Open Settings & Security</small></button><button type="button" class="more-tile" data-more-page="contact"><span>☎</span><b>Support</b><small>Open Support</small></button></div></div>
   <div id="content"></div>
 </main>
 <nav class="tw-bottom-nav" id="twBottomNav" aria-label="Main navigation">
@@ -372,8 +354,9 @@ function ensureSupabaseLibrary(){
   document.head.appendChild(script);
  });
 }
-function goPage(p){page=p;render()}
-function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);const b=$('menuButton');if(b){b.textContent=open?'✕ Close Menu':'☰ Menu';b.setAttribute('aria-expanded',String(open))}}
+function goPage(p){page=p;toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p)}
+function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open))}
+document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile)goPage(tile.dataset.morePage);if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
 function normStatus(s){return STATUSES.includes(s)?s:'New'}
