@@ -654,13 +654,17 @@ async function load(authUser){
   const {data:row,error}=await withTimeout(sb.from('workspace_state').select('data').eq('owner_id',workspaceOwnerId).maybeSingle(),'Workspace data load');
   if(error)throw error;
   const saved=row?.data||{};
+  delete saved.customers;
   workspaceExtras={...saved};
   ['customers','inventory','associates','activities','projects','tasks','attendance'].forEach(k=>delete workspaceExtras[k]);
   if(isWorkspaceOwner){
    const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
   }
-  db={customers:Array.isArray(saved.customers)?saved.customers:[],inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
+  const {data:secureLeadRows,error:secureLeadError}=await withTimeout(sb.from('team_leads').select('id,workspace_owner_id,assigned_to,assigned_by,lead_data,created_at,updated_at').eq('workspace_owner_id',workspaceOwnerId),'Secure lead assignments load');
+  if(secureLeadError)throw secureLeadError;
+  const secureCustomers=(secureLeadRows||[]).map(r=>({...((r.lead_data&&typeof r.lead_data==='object')?r.lead_data:{}),id:r.id,_assignedTo:r.assigned_to,assignedTo:r.assigned_to,_assignedBy:r.assigned_by}));
+  db={customers:secureCustomers,inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
   setStatus('Cloud connected');render();maybeAutoCheckIn();
@@ -676,10 +680,17 @@ async function save(){
  if(saveBusy){alert('Save चल रहा है, एक क्षण रुकें।');return false}
  saveBusy=true;setStatus('Saving to cloud...');
  try{
+  const sharedData={...workspaceExtras,...db};delete sharedData.customers;
   const {error}=await sb.from('workspace_state').upsert({
-   owner_id:workspaceOwnerId||user.id,data:{...workspaceExtras,...db},updated_at:new Date().toISOString()
+   owner_id:workspaceOwnerId||user.id,data:sharedData,updated_at:new Date().toISOString()
   },{onConflict:'owner_id'});
   if(error)throw error;
+  for(const lead of (db.customers||[])){
+   const payload={workspace_owner_id:workspaceOwnerId||user.id,assigned_to:lead.assignedTo||lead._assignedTo||user.id,assigned_by:lead._assignedBy||user.id,lead_data:Object.fromEntries(Object.entries(lead).filter(([k])=>!['id','assignedTo','_assignedTo','_assignedBy'].includes(k))),updated_at:new Date().toISOString()};
+   if(lead.id&&/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(lead.id)))payload.id=lead.id;
+   const {error:leadError}=await sb.from('team_leads').upsert(payload,{onConflict:'id'});
+   if(leadError)throw leadError;
+  }
   setStatus('Cloud synced');render();return true;
  }catch(err){setStatus('Save failed');alert('Cloud save failed: '+err.message);return false}
  finally{saveBusy=false}
@@ -1040,7 +1051,8 @@ function editRecord(kind,id){
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
  };
- const fields=labels[kind];if(!fields)return;
+ let fields=labels[kind];if(!fields)return;
+ if(kind==='customers'&&!isWorkspaceOwner)fields=fields.filter(f=>!['saleAmount','soldSize','saleDate'].includes(f[0]));
  const inputs=fields.map(f=>{
   const k=f[0];
   const value=old[k]??(k==='date'?today():k==='count'?1:k==='status'&&kind==='customers'?'New':'');
@@ -1072,6 +1084,7 @@ function editRecord(kind,id){
   const values=Object.fromEntries(new FormData(e.target).entries());
   if(kind==='activities')values.count=Number(values.count||1);
   if(kind==='customers'){
+   if(!isWorkspaceOwner){delete values.saleAmount;delete values.soldSize;delete values.saleDate;}
    values.status=normStatus(values.status||old.status);
    // पुराने follow-up fields को न मिटाएँ यदि form में कोई field खाली छोड़ी गई हो।
   }
@@ -1087,6 +1100,11 @@ function editRecord(kind,id){
 
 async function del(kind,id){
  if(!confirm('यह record delete करें?'))return;
+ if(kind==='customers'){
+  const {error}=await sb.from('team_leads').delete().eq('id',id).eq('workspace_owner_id',workspaceOwnerId||user.id);
+  if(error){alert('Lead delete failed: '+error.message);return}
+  db.customers=db.customers.filter(x=>x.id!==id);render();return;
+ }
  const old=db[kind];db[kind]=old.filter(x=>x.id!==id);
  const ok=await save();if(!ok)db[kind]=old;
 }
