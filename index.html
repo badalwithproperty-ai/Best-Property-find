@@ -770,7 +770,7 @@ if(page==='followups'){
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
  const config={
   customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
-  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status'],['reference','Reference Name']],
+  inventory:[['plotNo','Plot No.'],['project','Project Name'],['location','Project Location'],['dimensions','Dimensions (ft.)'],['size','Area (Sq. Yd.)'],['rate','Basic Sales Price'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity'],['count','Call count'],['notes','Notes']]
  };
@@ -779,10 +779,10 @@ if(page==='followups'){
   let val=x[f[0]];
   if(page==='customers'&&f[0]==='status')val=normStatus(val);
   return '<td>'+escapeHTML(val||'—')+'</td>';
- }).join('')+(page==='inventory'?'':'<td><button class="small secondary" onclick="editRecord(\''+page+'\',\''+escapeHTML(x.id)+'\')">Edit</button> '+
- '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td>')+'</tr>').join('');
+ }).join('')+ '<td><button class="small secondary" onclick="editRecord(\''+page+'\',\''+escapeHTML(x.id)+'\')">Edit</button> '+
+ '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td></tr>').join('');
  c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+
- tbl(fields.map(f=>f[1]).concat(page==='inventory'?[]:['Action']),rows);
+ tbl(fields.map(f=>f[1]).concat(['Action']),rows);
 }
 
 function openLeadDetails(id){
@@ -795,7 +795,7 @@ function editRecord(kind,id){
  const old=id?db[kind].find(x=>x.id===id)||{}:{};
  const labels={
   customers:[['name','Customer name'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Assigned To'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
-  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status']],
+  inventory:[['plotNo','Plot Number'],['project','Project Name'],['location','Project Location'],['dimensions','Dimensions (ft.)'],['size','Area (Sq. Yd.)'],['rate','Basic Sales Price'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
  };
