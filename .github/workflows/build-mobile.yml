@@ -52,6 +52,8 @@ jobs:
           retention-days: 30
   ios-simulator:
     name: iOS Simulator build (unsigned)
+    # Optional only; macOS runner capacity must not fail the Android APK workflow.
+    continue-on-error: true
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
