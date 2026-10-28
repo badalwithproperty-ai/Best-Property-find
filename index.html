@@ -180,6 +180,21 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 /* Hide the signed-in workspace email/role line from the dashboard header */
 #app>#welcome{display:none!important}
 /* Hide workspace email/role banner */
+
+/* Team Work CRM reference-screen layout */
+.crm-greeting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 17px;margin:0 0 15px;border-radius:16px;background:linear-gradient(115deg,#06442f,#07804b);color:#fff;box-shadow:0 6px 20px #06442f1c}
+.crm-greeting small{font-size:12px;opacity:.88}.crm-greeting h2{font-size:20px;color:#fff!important;margin:4px 0}.crm-greeting p{font-size:11px;margin:0;color:#d9f0df}.crm-greeting-avatar{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:#ffffff30;border:2px solid #ffffff60;font-size:23px}
+.crm-secondary-stats{margin-top:10px}.crm-secondary-stats .stat{padding:10px}.crm-secondary-stats .stat strong{font-size:19px}
+.crm-drawer{background:#fff!important;border:1px solid #dfe9e1!important;border-radius:0 0 18px 18px!important;box-shadow:0 15px 40px #042e1d22!important;padding:10px!important;max-height:78vh;overflow:auto}
+.crm-drawer-brand{display:flex;align-items:center;gap:12px;padding:10px 8px 16px;background:linear-gradient(120deg,#043d2b,#08764b);color:#fff;border-radius:12px}
+.crm-drawer-brand img{width:52px;height:52px;border-radius:10px;background:#fff;padding:3px}.crm-drawer-brand strong{display:block;font-size:17px}.crm-drawer-brand small{display:block;font-size:9px;letter-spacing:1px;color:#d7f0df;margin-top:3px}
+.crm-drawer-user{display:flex;align-items:center;gap:10px;padding:14px 8px;border-bottom:1px solid #e8eee9;margin-bottom:5px}.crm-drawer-avatar{width:39px;height:39px;display:grid;place-items:center;border-radius:50%;background:#e8f0eb;font-size:22px;color:#075b3e}.crm-drawer-user strong,.crm-drawer-user small{display:block}.crm-drawer-user strong{font-size:13px}.crm-drawer-user small{font-size:11px;color:#65756b;margin-top:3px;overflow-wrap:anywhere}
+#menuPanel.crm-drawer>button{display:flex!important;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 12px;margin:2px 0;background:transparent!important;color:#18392a!important;border:0!important;border-radius:9px!important;box-shadow:none!important;font-weight:600}
+#menuPanel.crm-drawer>button span{font-size:13px}#menuPanel.crm-drawer>button:not(.crm-menu-active){justify-content:flex-start}
+#menuPanel.crm-drawer>button.crm-menu-active{background:#e3f1e7!important;color:#075b3e!important}
+.crm-menu-divider{height:1px;background:#e5ece7;margin:8px 4px}.crm-menu-logout{border-top:1px solid #e5ece7;margin-top:10px;padding-top:7px}.crm-menu-logout button{width:100%;display:flex;gap:12px;padding:11px 12px;background:#fff!important;color:#244c39!important;border:0!important}
+@media(max-width:700px){.crm-greeting{padding:16px}.crm-greeting h2{font-size:18px}.crm-drawer{max-height:76vh}}
+
 </style>
 </head>
 <body>
@@ -251,15 +266,36 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 <main id="app" class="wrap hidden">
   <h1 id="welcome">TEAM WORK · My Workspace</h1>
   <div class="pagehead menu-toggle"><div><div class="section-kicker">WORKSPACE</div><p class="muted">Your team overview, projects, tasks and progress in one place.</p></div><button onclick="toggleMenu()" aria-expanded="false" id="menuButton">☰ Menu</button></div>
-  <div id="menuPanel" class="menu-panel hidden" aria-label="Main menu">
-<button onclick="goPage('dashboard');toggleMenu(false)">🏠 Dashboard</button><button onclick="goPage('projects');toggleMenu(false)">📁 Projects</button><button onclick="goPage('tasks');toggleMenu(false)">✅ Tasks</button><button onclick="goPage('team');toggleMenu(false)">👥 Team</button><button onclick="goPage('calendar');toggleMenu(false)">📅 Calendar</button><button onclick="goPage('reports');toggleMenu(false)">📊 Reports</button><button onclick="goPage('notifications');toggleMenu(false)">🔔 Notifications</button><button onclick="window.location.href='./admin.html?v=2'">🛡️ Admin Console ↗</button><button onclick="goPage('customers');toggleMenu(false)">👤 Leads & Customers</button><button onclick="goPage('inventory');toggleMenu(false)">🏡 Property Inventory</button><button onclick="goPage('associates');toggleMenu(false)">🤝 Associates</button><button onclick="goPage('activities');toggleMenu(false)">📞 Calls & Activities</button><button onclick="goPage('followups');toggleMenu(false)">📆 Follow-ups</button><button onclick="goPage('teamaccess');toggleMenu(false)">🔐 Team Access</button><button onclick="goPage('backup');toggleMenu(false)">💾 Backup & Data</button><button onclick="goPage('settings');toggleMenu(false)">⚙️ Settings</button><button onclick="goPage('security');toggleMenu(false)">🔒 Settings & Security</button><button onclick="goPage('contact');toggleMenu(false)">☎️ Support</button>
+  <div id="menuPanel" class="menu-panel hidden crm-drawer" aria-label="Main menu">
+<div class="crm-drawer-brand"><img src="./icons/icon.svg" alt="Team Work CRM"><div><strong>Team Work CRM</strong><small>TOGETHER WE GROW</small></div></div>
+<div class="crm-drawer-user"><span class="crm-drawer-avatar">♟</span><div><strong>'+escapeHTML((currentProfile&&currentProfile.full_name)||'Team Member')+'</strong><small>'+escapeHTML((currentProfile&&currentProfile.email)||'Team member')+'</small></div></div>
+<button class="crm-menu-active" onclick="goPage('dashboard');toggleMenu(false)">⌂ <span>Dashboard</span></button>
+<button onclick="goPage('customers');toggleMenu(false)">♟ <span>Leads</span></button>
+<button onclick="goPage('followups');toggleMenu(false)">◷ <span>Follow Up</span></button>
+<button onclick="goPage('activities');toggleMenu(false)">◆ <span>Site Visit</span></button>
+<button onclick="goPage('reports');toggleMenu(false)">▥ <span>Reports</span></button>
+<button onclick="goPage('team');toggleMenu(false)">♧ <span>Team</span></button>
+<button onclick="goPage('settings');toggleMenu(false)">⚙ <span>Settings</span></button>
+<div class="crm-menu-divider"></div>
+<button onclick="goPage('inventory');toggleMenu(false)">⌂ <span>Property Inventory</span></button>
+<button onclick="goPage('projects');toggleMenu(false)">▦ <span>Projects</span></button>
+<button onclick="goPage('tasks');toggleMenu(false)">✓ <span>Tasks</span></button>
+<button onclick="goPage('associates');toggleMenu(false)">♙ <span>Associates</span></button>
+<button onclick="goPage('calendar');toggleMenu(false)">▦ <span>Calendar</span></button>
+<button onclick="goPage('notifications');toggleMenu(false)">♧ <span>Notifications</span></button>
+<button onclick="goPage('teamaccess');toggleMenu(false)">♧ <span>Team Access</span></button>
+<button onclick="goPage('backup');toggleMenu(false)">▣ <span>Backup & Data</span></button>
+<button onclick="goPage('security');toggleMenu(false)">♢ <span>Settings & Security</span></button>
+<button onclick="goPage('contact');toggleMenu(false)">☎ <span>Support</span></button>
+<button onclick="window.location.href='./admin.html?v=2'">▣ <span>Admin Console ↗</span></button>
+<div class="crm-menu-logout"><button onclick="logout()">⇥ <span>Logout</span></button></div>
 </div>
   <div id="content"></div>
 </main>
 <nav class="tw-bottom-nav" id="twBottomNav" aria-label="Main navigation">
 <button data-page="dashboard" onclick="goPage('dashboard');setBottomNav('dashboard')"><span>⌂</span>Home</button>
 <button data-page="customers" onclick="goPage('customers');setBottomNav('customers')"><span>♟</span>Leads</button>
-<button data-page="followups" onclick="goPage('followups');setBottomNav('followups')"><span>◷</span>Follow Up</button>
+<button data-page="tasks" onclick="goPage('tasks');setBottomNav('tasks')"><span>✓</span>Tasks</button>
 <button data-page="reports" onclick="goPage('reports');setBottomNav('reports')"><span>▥</span>Reports</button>
 <button data-page="more" onclick="toggleMenu();setBottomNav('more')"><span>☷</span>More</button>
 </nav>
@@ -639,18 +675,14 @@ function render(){
    .reduce((n,a)=>n+Number(a.count||1),0);
   const converted=db.customers.filter(x=>x.status==='Converted').length;
   const pending=db.customers.filter(x=>x.followUpDate&&x.followUpDate>=today()&&x.status!=='Converted'&&x.status!=='Lost').length;
-  c.innerHTML='<section class="real-estate-hero"><div class="hero-pill">TEAM WORK CRM · REAL ESTATE SALES</div><h2 class="hero-title">TEAM WORK CRM</h2><div class="hero-subtitle">Manage customer enquiries, track property inventory, organize follow-ups and help your sales team grow — all in one professional workspace.</div><div class="hero-tagline">SMART WORKFLOW <span>•</span> BETTER RESULTS</div></section>'+
+  c.innerHTML='<section class="crm-greeting"><div><small>Good Morning,</small><h2>'+escapeHTML((currentProfile&&currentProfile.full_name)||'Team Member')+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">♟</div></section>'+
   '<div class="workflow-strip"><div class="workflow-step"><span class="workflow-num">01</span><div><b>Capture Leads</b><small>Customers & enquiries</small></div></div><div class="workflow-step"><span class="workflow-num">02</span><div><b>Show Inventory</b><small>Plots & availability</small></div></div><div class="workflow-step"><span class="workflow-num">03</span><div><b>Follow Up</b><small>Calls & reminders</small></div></div><div class="workflow-step"><span class="workflow-num">04</span><div><b>Close & Grow</b><small>Reports & team targets</small></div></div></div>'+
   '<div class="section-kicker">SALES OVERVIEW · LIVE WORKSPACE DATA</div>'+statCards([
    ['Total Leads',db.customers.length],
-   ['Plot Inventory',db.inventory.length],
-   ['Associates',db.associates.length],
-   ['Calls Logged',calls],
-   ['Converted Leads',converted],
-   ['Conversion Rate',db.customers.length?((converted/db.customers.length)*100).toFixed(1)+'%':'0%'],
-   ['Upcoming Follow-ups',pending],
-   ['Activities',db.activities.length]
-  ])+'<div class="section-kicker">QUICK ACTIONS</div><div class="tw-quick-actions crm-quick-actions"><button onclick="editRecord(\'customers\')"><span>＋</span><b>Add Lead</b><small>New enquiry</small></button><button onclick="goPage(\'customers\')"><span>♟</span><b>My Leads</b><small>View customers</small></button><button onclick="goPage(\'followups\')"><span>◷</span><b>Follow Up</b><small>Reminders</small></button><button onclick="editRecord(\'activities\')"><span>⌖</span><b>Site Visit</b><small>Log visit</small></button><button onclick="goPage(\'reports\')"><span>▥</span><b>Reports</b><small>Sales results</small></button><button onclick="goPage(\'team\')"><span>♧</span><b>Team</b><small>Team overview</small></button></div><div class="panel"><div class="pagehead"><h3>Recent Leads</h3><button onclick="goPage(\'customers\')">View all leads →</button></div>'+
+   ['Follow Up',pending],
+   ['Site Visit',db.activities.filter(a=>a.type==='Site Visit').length],
+   ['Converted',converted]
+  ])+'<div class="crm-secondary-stats">'+statCards([['Plot Inventory',db.inventory.length],['Associates',db.associates.length],['Calls Logged',calls],['Conversion Rate',db.customers.length?((converted/db.customers.length)*100).toFixed(1)+'%':'0%']])+'</div><div class="section-kicker">QUICK ACTIONS</div><div class="tw-quick-actions crm-quick-actions"><button onclick="editRecord(\'customers\')"><span>＋</span><b>Add Lead</b><small>New enquiry</small></button><button onclick="goPage(\'customers\')"><span>♟</span><b>My Leads</b><small>View customers</small></button><button onclick="goPage(\'followups\')"><span>◷</span><b>Follow Up</b><small>Reminders</small></button><button onclick="editRecord(\'activities\')"><span>⌖</span><b>Site Visit</b><small>Log visit</small></button><button onclick="goPage(\'reports\')"><span>▥</span><b>Reports</b><small>Sales results</small></button><button onclick="goPage(\'team\')"><span>♧</span><b>Team</b><small>Team overview</small></button></div><div class="panel"><div class="pagehead"><h3>Recent Leads</h3><button onclick="goPage(\'customers\')">View all leads →</button></div>'+
   tbl(['Name','Phone','Requirement','Status','Follow-up'],
    db.customers.slice().reverse().slice(0,8).map(x=>'<tr><td>'+escapeHTML(x.name)+
    '</td><td>'+escapeHTML(x.phone)+'</td><td>'+escapeHTML(x.requirement)+
