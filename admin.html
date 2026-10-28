@@ -67,29 +67,38 @@ async function loadRegisteredMembers(){
   target.innerHTML='<div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Referral ID</th><th>Designation</th><th>Approval</th><th>Registered</th><th>Action</th></tr></thead><tbody>'+profiles.map(p=>'<tr><td>'+escapeHtml(p.full_name)+'</td><td>'+escapeHtml(p.phone)+'</td><td><strong>'+escapeHtml(p.referral_id)+'</strong></td><td>'+escapeHtml(p.designation)+'</td><td>'+pill(String(p.approval_status||'pending').replace(/^./,c=>c.toUpperCase()))+'</td><td>'+escapeHtml(p.created_at?new Date(p.created_at).toLocaleString():'—')+'</td><td><div class="headactions"><button onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'approved\')">Approve</button><button class="secondary" onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'rejected\')">Reject</button><button class="dang" onclick="removeMemberProfile(\''+escapeHtml(p.user_id)+'\',\''+escapeHtml(p.full_name)+'\')">Remove</button></div></td></tr>').join('')+'</tbody></table></div><div class="notice" style="margin-top:12px">Remove सदस्य की referral/profile entry हटाता है; यह Supabase Authentication से login account को delete नहीं करता।</div>';
  }catch(err){target.innerHTML='<div class="notice">Supabase से सदस्य सूची नहीं आ सकी: '+escapeHtml(err.message||String(err))+'<br>यह लॉगिन/permission (RLS) या database connection की समस्या हो सकती है।</div>';}
 }
+async function callReferralAdminAction(action,userId){
+ const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
+ if(sessionError)throw sessionError;
+ const session=sessionData.session;if(!session)throw new Error('पहले मुख्य ऐप में लॉगिन करें।');
+ const response=await fetch(ADMIN_SUPABASE_URL+'/functions/v1/referral-auth',{
+  method:'POST',
+  headers:{'Content-Type':'application/json','apikey':ADMIN_SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
+  body:JSON.stringify({action,user_id:userId})
+ });
+ const result=await response.json().catch(()=>({error:'Server response पढ़ा नहीं जा सका।'}));
+ if(!response.ok)throw new Error(result.error||'Action failed ('+response.status+')');
+ return result;
+}
 async function changeMemberStatus(userId,status){
- const action=status==='approved'?'Approve':'Reject';
- if(!confirm(action+' this member?'))return;
+ const action=status==='approved'?'approve':'reject';
+ const label=action==='approve'?'Approve':'Reject';
+ if(!confirm(label+' this member?'))return;
  try{
-  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
-  if(sessionError)throw sessionError;
-  const session=sessionData.session;if(!session)throw new Error('पहले लॉगिन करें।');
-  const {data,error}=await adminSupabase.from('member_profiles').update({approval_status:status,approved_at:status==='approved'?new Date().toISOString():null,approved_by:status==='approved'?session.user.id:null}).eq('user_id',userId).eq('workspace_owner_id',session.user.id).select('user_id');
-  if(error)throw error;if(!data||!data.length)throw new Error('कोई बदलाव नहीं हुआ। Admin permission / workspace owner जाँचें।');
-  await loadRegisteredMembers();alert('Member status updated: '+action);
- }catch(err){alert('Status update नहीं हुआ: '+(err.message||String(err)));}
+  await callReferralAdminAction(action,userId);
+  await loadRegisteredMembers();
+  alert(action==='approve'?'Member approved. अब member दोबारा लॉगिन करके workspace इस्तेमाल कर सकता है.':'Member rejected. Workspace access revoke कर दिया गया है.');
+ }catch(err){alert(label+' नहीं हुआ: '+(err.message||String(err)));}
 }
 async function removeMemberProfile(userId,fullName){
- if(!confirm('क्या '+fullName+' की member profile और Referral ID entry हटानी है? यह login account को delete नहीं करेगा.'))return;
+ if(!confirm('क्या '+fullName+' का profile और login account स्थायी रूप से हटाना है? यह कार्रवाई वापस नहीं हो सकती। अगर इस member ने referrals बनाए हैं, तो पहले उन्हें reassign करना होगा.'))return;
  try{
-  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
-  if(sessionError)throw sessionError;
-  const session=sessionData.session;if(!session)throw new Error('पहले लॉगिन करें।');
-  const {data,error}=await adminSupabase.from('member_profiles').delete().eq('user_id',userId).eq('workspace_owner_id',session.user.id).select('user_id');
-  if(error)throw error;if(!data||!data.length)throw new Error('Profile नहीं हटी। Admin permission / workspace owner जाँचें।');
-  await loadRegisteredMembers();alert('Member profile removed.');
+  await callReferralAdminAction('remove',userId);
+  await loadRegisteredMembers();
+  alert('Member profile और login account हटा दिए गए हैं.');
  }catch(err){alert('Remove नहीं हुआ: '+(err.message||String(err)));}
 }
+
 function render(){let c=$('#content');$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
 if(page==='overview')html=overview();
 if(page==='projects')html=pageHead('Projects & Inventory','Manage projects, plot availability and pricing.','<button onclick="addProject()">＋ Add Project</button>')+'<div class="stats">'+stat('PROJECTS',data.projects.length,'⌂','Project records')+stat('PLOTS TRACKED',data.projects.reduce((n,x)=>n+Number(x.plots||0),0),'▦','Total plot count entered')+stat('ACTIVE PROJECTS',data.projects.filter(x=>x.status==='Active').length,'✓','Marked active')+stat('LEADS',data.leads.length,'◎','Across all projects')+'</div>'+table(['Project','Location','Plots','Price / sq yd','Status','Action'],rowsFor('projects',['name','location','plots','price','status','actions']));
