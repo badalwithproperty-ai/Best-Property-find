@@ -144,6 +144,12 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 .tw-bottom-nav button.active{background:#e5f2e8!important;color:#075b3e!important}
 @media(max-width:700px){body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}.tw-bottom-nav{display:grid}.wrap{padding:12px}.brand b{font-size:18px}#content .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#content .stat{padding:13px}#content .stat strong{font-size:24px}.tw-bottom-nav{padding-bottom:calc(7px + env(safe-area-inset-bottom))}}
 
+/* Full lead management screens matching the supplied Team Work CRM reference */
+.lead-filter-row{display:flex;gap:6px;overflow:auto;padding-top:12px}.lead-filter-row button{white-space:nowrap}
+.lead-list{display:grid;gap:9px;margin-top:12px}.lead-card{width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:13px;background:#fff!important;color:#183c2d!important;border:1px solid #e0e9e2;box-shadow:0 3px 12px #123c320b!important;border-radius:15px}.lead-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e0f0e4;color:#07583f;font-size:19px;font-weight:800}.lead-avatar.large{width:60px;height:60px;flex-basis:60px;font-size:25px}.lead-card-main{display:flex;flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:3px}.lead-card-main strong{font-size:15px}.lead-card-main small,.lead-card-side small{font-size:12px;color:#61766a}.lead-card-side{display:flex;align-items:flex-end;flex-direction:column;gap:8px}.lead-card-side span{font-size:26px;color:#789085}.lead-detail-head{display:flex;gap:14px;align-items:center;padding:16px 0}.lead-detail-head h2{margin:0 0 4px}.lead-detail-head p{margin:0 0 6px;color:#60766a}.lead-contact-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 22px}.lead-contact-actions a{text-decoration:none;text-align:center;border:1px solid #dce9df;background:#edf6ef;border-radius:12px;padding:12px 4px;color:#07583f;font-weight:750;font-size:13px}.lead-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}.lead-info-grid>div{padding:12px 0;border-bottom:1px solid #e8eee9;min-width:0}.lead-info-grid small{display:block;color:#728277;font-size:12px;margin-bottom:5px}.lead-info-grid strong{font-size:13px;overflow-wrap:anywhere}.lead-detail-modal{max-width:600px!important}
+.report-bars{display:grid;gap:14px}.report-bar-row{display:grid;grid-template-columns:minmax(90px,130px) 1fr 34px;align-items:center;gap:10px;font-size:13px}.report-bar-track{height:10px;border-radius:20px;background:#e8f0e9;overflow:hidden}.report-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#08764d,#a7df73)}
+@media(max-width:600px){.lead-card{padding:11px;gap:9px}.lead-info-grid{grid-template-columns:1fr 1fr}.lead-contact-actions a{font-size:12px}.report-bar-row{grid-template-columns:88px 1fr 26px;gap:7px}}
+
 </style>
 </head>
 <body>
@@ -687,6 +693,19 @@ if(page==='followups'){
    '<button class="secondary" onclick="enableNotifications()">Enable browser notifications</button><span id="notifyState" class="muted"></span></div>';return;
  }
 
+ if(page==='customers'){
+  const q=(window.leadSearchQuery||'').toLowerCase();
+  const filter=window.leadStatusFilter||'All';
+  const leads=db.customers.filter(x=>(!q||[x.name,x.phone,x.location,x.requirement,x.associate].join(' ').toLowerCase().includes(q))&&(filter==='All'||normStatus(x.status)===filter));
+  const converted=db.customers.filter(x=>normStatus(x.status)==='Converted').length;
+  c.innerHTML='<div class="pagehead"><div><div class="section-kicker">CUSTOMER RELATIONSHIP</div><h2>Leads & Customers</h2><p class="muted">Manage enquiries, lead details and next follow-ups.</p></div><button onclick="editRecord(\'customers\')">＋ Add Lead</button></div>'+
+  '<div class="stats">'+[['All Leads',db.customers.length],['New',db.customers.filter(x=>normStatus(x.status)==='New').length],['Follow Up',db.customers.filter(x=>normStatus(x.status)==='Follow-up').length],['Converted',converted]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('')+'</div>'+
+  '<div class="panel"><input id="leadSearchInput" placeholder="⌕ Search name, phone or location" value="'+escapeHTML(q)+'"><div class="lead-filter-row">'+['All','New','Contacted','Interested','Follow-up','Converted'].map(x=>'<button class="small '+(filter===x?'':'secondary')+'" onclick="window.leadStatusFilter='+JSON.stringify(x)+';render()">'+x+'</button>').join('')+'</div></div>'+
+  (leads.length?'<div class="lead-list">'+leads.map(x=>'<button class="lead-card" onclick="openLeadDetails('+JSON.stringify(String(x.id||''))+')"><div class="lead-avatar">'+escapeHTML((x.name||'?').trim().slice(0,1).toUpperCase())+'</div><div class="lead-card-main"><strong>'+escapeHTML(x.name||'Unnamed Lead')+'</strong><small>'+escapeHTML(x.phone||'No phone')+'</small><small>'+escapeHTML(x.location||x.requirement||'Property enquiry')+'</small><span class="badge">'+escapeHTML(normStatus(x.status))+'</span></div><div class="lead-card-side"><small>'+escapeHTML(x.followUpDate||'No follow-up')+'</small><span>›</span></div></button>').join('')+'</div>':'<div class="panel"><h3>No leads found</h3><p class="muted">Add a new lead or change the search filter.</p><button onclick="editRecord(\'customers\')">Add first lead</button></div>');
+  const search=$('leadSearchInput');if(search)search.oninput=()=>{window.leadSearchQuery=search.value;const pos=search.selectionStart;render();const next=$('leadSearchInput');if(next){next.focus();next.setSelectionRange(pos,pos)}};
+  return;
+ }
+
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
  const config={
   customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
@@ -703,6 +722,12 @@ if(page==='followups'){
  '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td>')+'</tr>').join('');
  c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+
  tbl(fields.map(f=>f[1]).concat(page==='inventory'?[]:['Action']),rows);
+}
+
+function openLeadDetails(id){
+ const x=db.customers.find(r=>String(r.id||'')===String(id));if(!x)return;
+ $('modal').innerHTML='<div class="modalback" id="modalBack"><div class="modal lead-detail-modal"><div class="pagehead"><button class="secondary" onclick="document.getElementById(\'modal\').innerHTML=\'\'">← Back</button><button onclick="editRecord(\'customers\','+JSON.stringify(String(x.id||''))+');">✎ Edit</button></div><div class="lead-detail-head"><div class="lead-avatar large">'+escapeHTML((x.name||'?').trim().slice(0,1).toUpperCase())+'</div><div><h2>'+escapeHTML(x.name||'Unnamed Lead')+'</h2><p>'+escapeHTML(x.phone||'No phone number')+'</p><span class="badge">'+escapeHTML(normStatus(x.status))+'</span></div></div><div class="lead-contact-actions"><a href="'+(x.phone?'tel:'+escapeHTML(x.phone).replace(/[^+0-9]/g,''):'#')+'">☎ Call</a><a href="'+(x.phone?'https://wa.me/'+escapeHTML(x.phone).replace(/[^0-9]/g,''):'#')+'" target="_blank" rel="noopener">◉ WhatsApp</a><a href="sms:'+escapeHTML(x.phone||'')+'">✉ Message</a></div><h3>Lead Information</h3><div class="lead-info-grid">'+[['Property Interest',x.requirement],['Budget Range',x.budget],['Location',x.location],['Lead Source',x.source],['Assigned To',x.associate],['Next Follow-up',x.followUpDate],['Follow-up Time',x.followUpTime],['Notes',x.followUpNotes]].map(p=>'<div><small>'+p[0]+'</small><strong>'+escapeHTML(p[1]||'—')+'</strong></div>').join('')+'</div><div class="actions"><button onclick="document.getElementById(\'modal\').innerHTML=\'\';editRecord(\'activities\')">＋ Log Activity</button><button class="secondary" onclick="document.getElementById(\'modal\').innerHTML=\'\';editRecord(\'customers\','+JSON.stringify(String(x.id||''))+')">Edit Lead</button></div></div></div>';
+ $('modalBack').onclick=e=>{if(e.target.id==='modalBack')$('modal').innerHTML=''};
 }
 
 function editRecord(kind,id){
