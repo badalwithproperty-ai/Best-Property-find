@@ -210,6 +210,7 @@ let sb=null,user=null,mode='login',page='dashboard';
 let workspaceOwnerId=null,isWorkspaceOwner=true,teamMembers=[];
 let authBusy=false,loading=false,saveBusy=false;
 let db={customers:[],inventory:[],associates:[],activities:[]};
+let workspaceExtras={};
 
 const $=id=>document.getElementById(id);
 const STATUSES=['New','Contacted','Interested','Follow-up','Converted','Lost'];
@@ -467,6 +468,8 @@ async function load(authUser){
   const {data:row,error}=await withTimeout(sb.from('workspace_state').select('data').eq('owner_id',workspaceOwnerId).maybeSingle(),'Workspace data load');
   if(error)throw error;
   const saved=row?.data||{};
+  workspaceExtras={...saved};
+  ['customers','inventory','associates','activities','projects','tasks'].forEach(k=>delete workspaceExtras[k]);
   if(isWorkspaceOwner){
    const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
@@ -488,7 +491,7 @@ async function save(){
  saveBusy=true;setStatus('Saving to cloud...');
  try{
   const {error}=await sb.from('workspace_state').upsert({
-   owner_id:workspaceOwnerId||user.id,data:db,updated_at:new Date().toISOString()
+   owner_id:workspaceOwnerId||user.id,data:{...workspaceExtras,...db},updated_at:new Date().toISOString()
   },{onConflict:'owner_id'});
   if(error)throw error;
   setStatus('Cloud synced');render();return true;
