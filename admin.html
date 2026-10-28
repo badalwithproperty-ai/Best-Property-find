@@ -114,6 +114,30 @@ async function removeMemberProfile(userId,fullName){
  }catch(err){alert('Remove नहीं हुआ: '+(err.message||String(err)));}
 }
 
+async function adminLogin(event){
+ event.preventDefault();
+ const button=$('#adminLoginButton'),errorBox=$('#adminLoginError');
+ button.disabled=true;button.textContent='Signing in…';errorBox.classList.add('hidden');
+ try{
+  if(!adminSupabase)adminSupabase=window.supabase.createClient(ADMIN_SUPABASE_URL,ADMIN_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const response=await fetch(ADMIN_SUPABASE_URL+'/functions/v1/referral-auth',{
+   method:'POST',
+   headers:{'Content-Type':'application/json','apikey':ADMIN_SUPABASE_KEY},
+   body:JSON.stringify({action:'login',referral_id:$('#adminReferralId').value.trim(),password:$('#adminPassword').value})
+  });
+  const result=await response.json().catch(()=>({error:'Server response पढ़ा नहीं जा सका।'}));
+  if(!response.ok)throw new Error(result.error||'Login failed ('+response.status+')');
+  if(!result.session||!result.session.access_token||!result.session.refresh_token)throw new Error('Login session नहीं मिला। मुख्य ऐप में login करके फिर कोशिश करें।');
+  const {error}=await adminSupabase.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});
+  if(error)throw error;
+  await initializeAdminConsole();
+  if(!adminAuthorized)throw new Error('यह अकाउंट Main Admin नहीं है। केवल Main Admin ही Admin Console खोल सकता है।');
+ }catch(err){
+  errorBox.textContent=err.message||String(err);errorBox.classList.remove('hidden');
+ }finally{
+  button.disabled=false;button.textContent='Login to Admin Console';
+ }
+}
 async function initializeAdminConsole(){
  try{
   if(!window.supabase||!window.supabase.createClient)throw new Error('Supabase library load नहीं हुई।');
@@ -141,7 +165,7 @@ async function initializeAdminConsole(){
   const c=$('#content');c.innerHTML='<div class="notice">Admin Console connect नहीं हो पाया: '+escapeHtml(err.message||String(err))+'। मुख्य ऐप में लॉगिन करके फिर कोशिश करें।</div>';
  }
 }
-function render(){let c=$('#content');if(!adminAuthorized){c.innerHTML='<div class="panel"><h2>Admin login required</h2><p class="muted">इस Admin Console को इस्तेमाल करने के लिए मुख्य TEAM WORK ऐप में Main Admin अकाउंट से लॉगिन करें।</p><a class="btn" href="./">Open TEAM WORK App</a></div>';return;}$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
+function render(){let c=$('#content');if(!adminAuthorized){c.innerHTML='<div class="panel" style="max-width:480px;margin:30px auto"><h2>Admin Login</h2><p class="muted">Main Admin अपने 6-digit Referral ID और password से यहाँ लॉगिन करें। टीम सदस्य इस Admin Console में प्रवेश नहीं कर सकते।</p><form id="adminLoginForm"><label for="adminReferralId">Main Admin Referral ID</label><input id="adminReferralId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="username" required placeholder="6-digit Referral ID"><label for="adminPassword">Password</label><input id="adminPassword" type="password" minlength="8" autocomplete="current-password" required><div id="adminLoginError" class="notice hidden" style="margin-top:12px"></div><button id="adminLoginButton" style="margin-top:14px;width:100%">Login to Admin Console</button></form><p class="muted" style="margin-top:14px">यदि आप Main Admin हैं और login नहीं हो रहा, तो उसी referral ID/password से मुख्य ऐप में login करके देखें।</p></div>';const form=$('#adminLoginForm');form.onsubmit=adminLogin;return;}$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
 if(page==='overview')html=overview();
 if(page==='projects')html=pageHead('Projects & Inventory','Manage projects, plot availability and pricing.','<button onclick="addProject()">＋ Add Project</button>')+'<div class="stats">'+stat('PROJECTS',data.projects.length,'⌂','Project records')+stat('PLOTS TRACKED',data.projects.reduce((n,x)=>n+Number(x.plots||0),0),'▦','Total plot count entered')+stat('ACTIVE PROJECTS',data.projects.filter(x=>x.status==='Active').length,'✓','Marked active')+stat('LEADS',data.leads.length,'◎','Across all projects')+'</div>'+table(['Project','Location','Plots','Price / sq yd','Status','Action'],rowsFor('projects',['name','location','plots','price','status','actions']));
 if(page==='leads')html=pageHead('Leads & Customers','Track source, ownership, follow-up and lead stage.','<button onclick="addLead()">＋ Add Lead</button><button class="secondary" onclick="exportCSV(\'leads\')">Export CSV</button>')+'<div class="filters"><input id="search" placeholder="Search name, phone or project..." value="'+escapeHtml(filter)+'"><select id="stage"><option value="">All stages</option>'+['New','Follow-up','Site Visit','Negotiation','Converted','Lost'].map(x=>'<option>'+x+'</option>').join('')+'</select></div><div id="leadTable"></div>';
