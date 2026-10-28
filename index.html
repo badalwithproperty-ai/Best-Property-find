@@ -616,9 +616,9 @@ if(page==='followups'){
   let val=x[f[0]];
   if(page==='customers'&&f[0]==='status')val=normStatus(val);
   return '<td>'+escapeHTML(val||'—')+'</td>';
- }).join('')+(page==='inventory'?'':'<td><button class="small secondary" onclick="editRecord(\\''+page+'\\',\\''+escapeHTML(x.id)+'\\')">Edit</button> '+
- '<button class="small danger" onclick="del(\\''+page+'\\',\\''+escapeHTML(x.id)+'\\')">Delete</button></td>')+'</tr>').join('');
- c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\\''+page+'\\')">+ Add New</button></div>'+
+ }).join('')+(page==='inventory'?'':'<td><button class="small secondary" onclick="editRecord(\''+page+'\',\''+escapeHTML(x.id)+'\')">Edit</button> '+
+ '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td>')+'</tr>').join('');
+ c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+
  tbl(fields.map(f=>f[1]).concat(page==='inventory'?[]:['Action']),rows);
 }
 
