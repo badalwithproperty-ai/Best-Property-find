@@ -625,7 +625,7 @@ function editRecord(kind,id){
   if(kind==='customers'&&k==='status'){
    input='<select name="status">'+statusOptions(normStatus(value))+'</select>';
   }else if(kind==='inventory'&&k==='status'){
-   const inventoryStatuses=['Available','Working','Token','Sold Out'];
+   const inventoryStatuses=['Available','Booking','Token','Sold Out'];
    input='<select name="status">'+inventoryStatuses.map(s=>'<option value="'+s+'" '+(s===value?'selected':'')+'>'+s+'</option>').join('')+'</select>';
   }else if(k==='followUpDate'){
    input='<input type="date" name="'+k+'" value="'+escapeHTML(value)+'">';
