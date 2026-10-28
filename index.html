@@ -689,7 +689,7 @@ function previewProfilePhoto(event){
    pendingProfilePhoto=canvas.toDataURL('image/jpeg',0.72);
    const preview=$('profileAvatarPreview');if(preview)preview.src=pendingProfilePhoto;
   };
-  img.onerror=function(){alert('यह फोटो पढ़ी नहीं जा सकी। दूसरी image चुनें।'};img.src=String(reader.result);
+  img.onerror=function(){alert('यह फोटो पढ़ी नहीं जा सकी। दूसरी image चुनें।');};img.src=String(reader.result);
  };
  reader.onerror=function(){alert('फोटो पढ़ने में समस्या हुई।')};reader.readAsDataURL(file);
 }
