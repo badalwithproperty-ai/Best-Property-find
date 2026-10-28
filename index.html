@@ -150,6 +150,7 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 .report-bars{display:grid;gap:14px}.report-bar-row{display:grid;grid-template-columns:minmax(90px,130px) 1fr 34px;align-items:center;gap:10px;font-size:13px}.report-bar-track{height:10px;border-radius:20px;background:#e8f0e9;overflow:hidden}.report-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#08764d,#a7df73)}
 @media(max-width:600px){.lead-card{padding:11px;gap:9px}.lead-info-grid{grid-template-columns:1fr 1fr}.lead-contact-actions a{font-size:12px}.report-bar-row{grid-template-columns:88px 1fr 26px;gap:7px}}
 
+.settings-list{display:grid;gap:8px;margin:16px 0}.settings-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;background:#fff!important;color:#163d2d!important;border:1px solid #e0e9e2;box-shadow:none!important}.settings-item>span{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#eaf5eb;color:#087348;font-size:19px}.settings-item>div{display:flex;flex:1;flex-direction:column;gap:4px}.settings-item strong{font-size:14px}.settings-item small{font-size:12px;color:#6b7b70}.settings-item>b{font-size:22px;color:#7b8c80}
 </style>
 </head>
 <body>
@@ -222,7 +223,7 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
   <h1 id="welcome">TEAM WORK · My Workspace</h1>
   <div class="pagehead menu-toggle"><div><div class="section-kicker">WORKSPACE</div><p class="muted">Your team overview, projects, tasks and progress in one place.</p></div><button onclick="toggleMenu()" aria-expanded="false" id="menuButton">☰ Menu</button></div>
   <div id="menuPanel" class="menu-panel hidden" aria-label="Main menu">
-<button onclick="goPage('dashboard');toggleMenu(false)">🏠 Dashboard</button><button onclick="goPage('projects');toggleMenu(false)">📁 Projects</button><button onclick="goPage('tasks');toggleMenu(false)">✅ Tasks</button><button onclick="goPage('team');toggleMenu(false)">👥 Team</button><button onclick="goPage('calendar');toggleMenu(false)">📅 Calendar</button><button onclick="goPage('reports');toggleMenu(false)">📊 Reports</button><button onclick="goPage('notifications');toggleMenu(false)">🔔 Notifications</button><button onclick="window.location.href='./admin.html?v=2'">🛡️ Admin Console ↗</button><button onclick="goPage('customers');toggleMenu(false)">👤 Leads & Customers</button><button onclick="goPage('inventory');toggleMenu(false)">🏡 Property Inventory</button><button onclick="goPage('associates');toggleMenu(false)">🤝 Associates</button><button onclick="goPage('activities');toggleMenu(false)">📞 Calls & Activities</button><button onclick="goPage('followups');toggleMenu(false)">📆 Follow-ups</button><button onclick="goPage('teamaccess');toggleMenu(false)">🔐 Team Access</button><button onclick="goPage('backup');toggleMenu(false)">💾 Backup & Data</button><button onclick="goPage('security');toggleMenu(false)">🔒 Settings & Security</button><button onclick="goPage('contact');toggleMenu(false)">☎️ Support</button>
+<button onclick="goPage('dashboard');toggleMenu(false)">🏠 Dashboard</button><button onclick="goPage('projects');toggleMenu(false)">📁 Projects</button><button onclick="goPage('tasks');toggleMenu(false)">✅ Tasks</button><button onclick="goPage('team');toggleMenu(false)">👥 Team</button><button onclick="goPage('calendar');toggleMenu(false)">📅 Calendar</button><button onclick="goPage('reports');toggleMenu(false)">📊 Reports</button><button onclick="goPage('notifications');toggleMenu(false)">🔔 Notifications</button><button onclick="window.location.href='./admin.html?v=2'">🛡️ Admin Console ↗</button><button onclick="goPage('customers');toggleMenu(false)">👤 Leads & Customers</button><button onclick="goPage('inventory');toggleMenu(false)">🏡 Property Inventory</button><button onclick="goPage('associates');toggleMenu(false)">🤝 Associates</button><button onclick="goPage('activities');toggleMenu(false)">📞 Calls & Activities</button><button onclick="goPage('followups');toggleMenu(false)">📆 Follow-ups</button><button onclick="goPage('teamaccess');toggleMenu(false)">🔐 Team Access</button><button onclick="goPage('backup');toggleMenu(false)">💾 Backup & Data</button><button onclick="goPage('settings');toggleMenu(false)">⚙️ Settings</button><button onclick="goPage('security');toggleMenu(false)">🔒 Settings & Security</button><button onclick="goPage('contact');toggleMenu(false)">☎️ Support</button>
 </div>
   <div id="content"></div>
 </main>
@@ -620,6 +621,20 @@ function render(){
  if(page==='notifications'){
  c.innerHTML='<div class="panel"><h2>🔔 Reminder Alarm & Notifications</h2><p>कॉल की तारीख और समय ग्राहक के Follow-up में सेव करें। CRM खुला रहने पर कॉल से <b>2 मिनट पहले</b> स्क्रीन notification और bell sound आएगा।</p><div class="actions"><button onclick="enableNotifications()">🔔 Enable Reminder Alarm</button><button class="secondary" onclick="checkFollowupNotifications()">Test / Check Now</button><button class="secondary" onclick="goPage(\'followups\')">📅 View All Reminders</button></div><p id="notifyState" class="muted">'+('Notification' in window?('Browser permission: '+Notification.permission):'यह browser notifications support नहीं करता')+'</p><div class="card"><h3>⚙️ फोन में ये सेटिंग रखें</h3><ol><li>Enable Reminder Alarm दबाकर permission Allow करें।</li><li>फोन की Settings में Chrome/Team Work CRM notifications Allow करें और volume चालू रखें।</li><li>Reminder समय पर पाने के लिए app/website खुली रखें; battery saver इसे रोक सकता है।</li></ol></div><p class="setting-note">महत्वपूर्ण: अगर app पूरी तरह बंद हो या फोन ने background में रोक दिया हो, तो alarm की guarantee नहीं है। बंद app में भरोसेमंद push alarm के लिए server push service अलग से चाहिए।</p></div>';return;
 }
+if(page==='settings'){
+ c.innerHTML='<div class="panel"><h2>Settings</h2><p class="muted">Profile, notifications, security and app information.</p>'+
+ '<div class="settings-list">'+
+ '<button class="settings-item" onclick="goPage(\'profile\')"><span>♙</span><div><strong>Profile Information</strong><small>View your account details</small></div><b>›</b></button>'+
+ '<button class="settings-item" onclick="goPage(\'security\')"><span>♙</span><div><strong>Change Password / App Lock</strong><small>Protect your account and device</small></div><b>›</b></button>'+
+ '<button class="settings-item" onclick="goPage(\'notifications\')"><span>♧</span><div><strong>Notification Settings</strong><small>Follow-up reminders and alerts</small></div><b>›</b></button>'+
+ '<button class="settings-item" onclick="goPage(\'backup\')"><span>⚙</span><div><strong>App Settings & Backup</strong><small>Export and restore workspace data</small></div><b>›</b></button>'+
+ '<button class="settings-item" onclick="goPage(\'about\')"><span>▤</span><div><strong>Privacy & About</strong><small>App information and data handling</small></div><b>›</b></button>'+
+ '</div><button class="danger" onclick="logout()">Log out</button></div>';return;
+}
+if(page==='profile'){
+ c.innerHTML='<div class="panel"><div class="pagehead"><h2>Profile Information</h2><button class="secondary" onclick="goPage(\'settings\')">← Settings</button></div><div class="lead-detail-head"><div class="lead-avatar large">♙</div><div><h3>'+escapeHTML(user?.user_metadata?.full_name||user?.email||'Team Member')+'</h3><p>'+escapeHTML(user?.email||'Referral account')+'</p></div></div><div class="lead-info-grid"><div><small>Account email</small><strong>'+escapeHTML(user?.email||'Not provided')+'</strong></div><div><small>Workspace role</small><strong>'+(isWorkspaceOwner?'Main Admin':'Team Member')+'</strong></div><div><small>Access status</small><strong>Signed in</strong></div></div><p class="muted">For changes to referral account details, contact your Main Admin.</p></div>';return;
+}
+
 if(page==='security'){
  const enabled=localStorage.getItem('twcrm_lock_enabled')==='1';
  c.innerHTML='<div class="panel"><h2>🔒 App Lock & Security</h2><p>6 अंकों का PIN सेट करें। ऐप minimize/background में जाने या दोबारा खुलने पर PIN माँगा जाएगा।</p><div class="field"><label>New PIN (6 digits)</label><input id="lockPin" type="password" inputmode="numeric" maxlength="6" placeholder="6-digit PIN"></div><div class="field"><label>Confirm PIN</label><input id="lockPinConfirm" type="password" inputmode="numeric" maxlength="6" placeholder="Confirm 6-digit PIN"></div><div class="actions"><button onclick="saveAppPin()">Save / Update PIN</button><button class="secondary" onclick="lockApp()">Lock App Now</button><button class="danger" onclick="disableAppPin()">Disable App Lock</button></div><p class="muted">App lock status: <b>'+(enabled?'Enabled':'Not enabled')+'</b></p><p class="setting-note">यह device पर app screen lock है, data encryption नहीं। PIN इसी device/browser में store होता है।</p></div>';return;
@@ -655,6 +670,11 @@ if(page==='followups'){
    ['Total Leads',total],['Active Leads',active],['Converted',converted],['Lost',lost],
    ['Calls Logged',calls],['Conversion Rate',total?((converted/total)*100).toFixed(1)+'%':'0%']
   ])+'<div class="panel"><h3>Lead Status Summary</h3>'+
+   '<div class="panel"><h3>Lead Status Overview</h3><div class="report-bars">'+STATUSES.map(st=>{
+    const n=db.customers.filter(x=>normStatus(x.status)===st).length;
+    const pct=total?Math.round(n/total*100):0;
+    return '<div class="report-bar-row"><span>'+escapeHTML(st)+'</span><div class="report-bar-track"><div class="report-bar-fill" style="width:'+pct+'%"></div></div><strong>'+n+'</strong></div>';
+   }).join('')+'</div></div>'+
    tbl(['Status','Count','Share'],STATUSES.map(s=>{
     const n=db.customers.filter(x=>normStatus(x.status)===s).length;
     return '<tr><td>'+s+'</td><td>'+n+'</td><td>'+(total?(n/total*100).toFixed(1):'0.0')+'%</td></tr>';
