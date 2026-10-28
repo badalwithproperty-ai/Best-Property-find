@@ -734,7 +734,7 @@ function render(){
    .reduce((n,a)=>n+Number(a.count||1),0);
   const converted=db.customers.filter(x=>x.status==='Converted').length;
   const pending=db.customers.filter(x=>x.followUpDate&&x.followUpDate>=today()&&x.status!=='Converted'&&x.status!=='Lost').length;
-  c.innerHTML='<section class="crm-greeting"><div><small>Good Morning,</small><h2>'+escapeHTML((user&&user.user_metadata&&user.user_metadata.full_name)||'Team Member')+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">♟</div></section>'+
+  c.innerHTML='<section class="crm-greeting"><div><small>Good Morning,</small><h2>'+escapeHTML((user&&user.user_metadata&&user.user_metadata.full_name)||'Team Member')+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">'+((user&&user.user_metadata&&user.user_metadata.avatar_url)?'<img src="'+escapeHTML(user.user_metadata.avatar_url)+'" alt="Profile photo" onerror="this.style.display=\'none\';this.parentNode.textContent=\'♟\'">':'♟')+'</div></section>'+
   '<div class="workflow-strip"><div class="workflow-step"><span class="workflow-num">01</span><div><b>Capture Leads</b><small>Customers & enquiries</small></div></div><div class="workflow-step"><span class="workflow-num">02</span><div><b>Show Inventory</b><small>Plots & availability</small></div></div><div class="workflow-step"><span class="workflow-num">03</span><div><b>Follow Up</b><small>Calls & reminders</small></div></div><div class="workflow-step"><span class="workflow-num">04</span><div><b>Close & Grow</b><small>Reports & team targets</small></div></div></div>'+
   '<div class="section-kicker">SALES OVERVIEW · LIVE WORKSPACE DATA</div>'+statCards([
    ['Total Leads',db.customers.length],
