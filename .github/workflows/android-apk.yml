@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'android-app/**'
+      - 'assets/team-work-real-estate-crm.svg'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 permissions:
@@ -22,6 +23,23 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Generate launcher icons from TEAM WORK logo
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user cairosvg
+          python3 - <<'PY'
+          import os
+          import cairosvg
+          source = 'assets/team-work-real-estate-crm.svg'
+          densities = {'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96, 'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192}
+          for folder, size in densities.items():
+              out_dir = f'android-app/app/src/main/res/{folder}'
+              os.makedirs(out_dir, exist_ok=True)
+              cairosvg.svg2png(url=source, write_to=f'{out_dir}/ic_launcher.png', output_width=size, output_height=size)
+              cairosvg.svg2png(url=source, write_to=f'{out_dir}/ic_launcher_round.png', output_width=size, output_height=size)
+              print(f'Generated {folder} launcher icons: {size}x{size}')
+          PY
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -32,7 +50,7 @@ jobs:
           set -euo pipefail
           rm -f android-app/app/build/outputs/apk/debug/app-debug.apk
           gradle --no-daemon -p android-app clean assembleDebug
-      - name: Validate APK package
+      - name: Validate APK package and launcher icon
         shell: bash
         run: |
           set -euo pipefail
@@ -43,14 +61,16 @@ jobs:
           unzip -l "$APK" | tee /tmp/apk-list.txt
           grep -Eq 'classes[0-9]*\.dex' /tmp/apk-list.txt
           grep -q 'AndroidManifest.xml' /tmp/apk-list.txt
+          grep -q 'ic_launcher.png' /tmp/apk-list.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/apk-badging.txt
           grep -q "package: name='com.teamwork.crm.admin'" /tmp/apk-badging.txt
+          grep -q "application: label='TEAM WORK Admin'" /tmp/apk-badging.txt
       - name: Publish Admin APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: team-work-admin-v1.0.1
-          name: TEAM WORK Admin Android App v1.0.1
-          body: TEAM WORK Admin Android app. APK ZIP contents, DEX, Android manifest, and package ID validated before publishing.
+          tag_name: team-work-admin-v1.0.2
+          name: TEAM WORK Admin Android App v1.0.2
+          body: TEAM WORK Admin Android app. Built with the official TEAM WORK Real Estate CRM logo as launcher icon; APK contents and package identity validated before publishing.
           make_latest: false
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
