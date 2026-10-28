@@ -591,7 +591,7 @@ async function renderTeamAccess(c){
 
 function render(){
  const c=$('content');if(!c)return;
- if(['dashboard','projects','tasks','team','calendar','reports'].includes(page)){renderTeamWorkspace(c);return;}
+ if(['projects','tasks','calendar'].includes(page)){renderTeamWorkspace(c);return;}
 
  if(page==='dashboard'){
   const calls=db.activities.filter(a=>a.type==='Call')
