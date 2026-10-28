@@ -393,7 +393,7 @@ let sb=null,user=null,mode='login',page='dashboard';
 // Compatibility alias for older dashboard fragments; always set from the active session.
 let currentProfile=null;
 let workspaceOwnerId=null,isWorkspaceOwner=true,isTeamLeader=false,teamMembers=[];
-let authBusy=false,loading=false,saveBusy=false;
+let authBusy=false,loading=false,saveBusy=false,workspaceRealtimeChannel=null;
 let db={customers:[],inventory:[],associates:[],activities:[]};
 let workspaceExtras={};
 
@@ -606,6 +606,22 @@ async function logout(){
  showLogin();
 }
 
+function setupWorkspaceRealtime(){
+ if(!sb||!workspaceOwnerId||!sb.channel)return;
+ if(workspaceRealtimeChannel){try{sb.removeChannel(workspaceRealtimeChannel)}catch(_){}workspaceRealtimeChannel=null;}
+ const owner=workspaceOwnerId;
+ workspaceRealtimeChannel=sb.channel('team-work-crm-sync-'+owner)
+  .on('postgres_changes',{event:'*',schema:'public',table:'workspace_state',filter:'owner_id=eq.'+owner},()=>{
+   if(!user||user.id!==owner||loading||saveBusy)return;
+   load(user).catch(err=>console.warn('CRM live sync failed',err));
+  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'team_leads',filter:'workspace_owner_id=eq.'+owner},()=>{
+   if(!user||user.id!==owner||loading||saveBusy)return;
+   load(user).catch(err=>console.warn('CRM lead live sync failed',err));
+  })
+  .subscribe();
+}
+
 async function load(authUser){
  if(!sb||!authUser||loading)return;
  loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;isTeamLeader=false;teamMembers=[];setStatus('Connecting to cloud...');
@@ -695,7 +711,7 @@ async function load(authUser){
   db={customers:secureCustomers,inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
-  setStatus('Cloud connected');render();maybeAutoCheckIn();
+  setStatus('Cloud connected');setupWorkspaceRealtime();render();maybeAutoCheckIn();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
