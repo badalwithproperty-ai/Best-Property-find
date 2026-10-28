@@ -262,6 +262,23 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
  .tw-dashboard-task{align-items:flex-start}
 }
 
+
+/* More opens as a dedicated full-screen page, never as a half drawer */
+#menuPanel.crm-drawer{position:fixed!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;margin:0!important;padding:calc(20px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom))!important;border:0!important;border-radius:0!important;box-sizing:border-box!important;background:#f6f9f6!important;z-index:99999!important;box-shadow:none!important}
+body.more-open{overflow:hidden!important}
+body.more-open #app>.workspace-header,
+body.more-open #content,
+body.more-open #twBottomNav,
+body.more-open .tw-bottom-nav{display:none!important}
+body.more-open #app{display:none!important}
+body.more-open #menuPanel.crm-drawer{display:block!important}
+#menuPanel .more-panel-head{position:sticky;top:0;z-index:2;background:#f6f9f6;padding:8px 0 18px;margin-bottom:10px;border-bottom:1px solid #e1e9e3}
+#menuPanel .more-panel-head strong{font-size:23px;color:#173d2d}
+#menuPanel .more-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:760px;margin:0 auto}
+#menuPanel .more-tile{min-height:112px;padding:18px!important;border-radius:16px!important;background:#fff!important}
+#menuPanel .more-tile>span{font-size:24px}
+@media(min-width:700px){#menuPanel.crm-drawer{padding:32px 36px!important}#menuPanel .more-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}}
+
 </style>
 </head>
 <body>
@@ -395,7 +412,7 @@ function ensureSupabaseLibrary(){
  });
 }
 function goPage(p){page=p;toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
-function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open))}
+function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);document.body.classList.toggle('more-open',open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open));if(open)window.scrollTo({top:0,behavior:'instant'})}
 document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile)goPage(tile.dataset.morePage);if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(d){return d?escapeHTML(d):'—'}
