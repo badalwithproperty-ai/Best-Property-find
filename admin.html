@@ -64,8 +64,31 @@ async function loadRegisteredMembers(){
   const {data:profiles,error}=await adminSupabase.from('member_profiles').select('user_id,full_name,phone,referral_id,designation,approval_status,created_at').eq('workspace_owner_id',session.user.id).order('created_at',{ascending:false});
   if(error)throw error;
   if(!profiles||!profiles.length){target.innerHTML='<div class="empty">इस लॉगिन के workspace में अभी कोई registered member नहीं मिला। अगर रजिस्ट्रेशन किसी दूसरे workspace owner से जुड़ा है, तो उसी admin account से लॉगिन करें।</div>';return;}
-  target.innerHTML='<div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Referral ID</th><th>Designation</th><th>Approval</th><th>Registered</th></tr></thead><tbody>'+profiles.map(p=>'<tr><td>'+escapeHtml(p.full_name)+'</td><td>'+escapeHtml(p.phone)+'</td><td><strong>'+escapeHtml(p.referral_id)+'</strong></td><td>'+escapeHtml(p.designation)+'</td><td>'+pill(String(p.approval_status||'pending').replace(/^./,c=>c.toUpperCase()))+'</td><td>'+escapeHtml(p.created_at?new Date(p.created_at).toLocaleString():'—')+'</td></tr>').join('')+'</tbody></table></div>';
+  target.innerHTML='<div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Referral ID</th><th>Designation</th><th>Approval</th><th>Registered</th><th>Action</th></tr></thead><tbody>'+profiles.map(p=>'<tr><td>'+escapeHtml(p.full_name)+'</td><td>'+escapeHtml(p.phone)+'</td><td><strong>'+escapeHtml(p.referral_id)+'</strong></td><td>'+escapeHtml(p.designation)+'</td><td>'+pill(String(p.approval_status||'pending').replace(/^./,c=>c.toUpperCase()))+'</td><td>'+escapeHtml(p.created_at?new Date(p.created_at).toLocaleString():'—')+'</td><td><div class="headactions"><button onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'approved\')">Approve</button><button class="secondary" onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'rejected\')">Reject</button><button class="dang" onclick="removeMemberProfile(\''+escapeHtml(p.user_id)+'\',\''+escapeHtml(p.full_name)+'\')">Remove</button></div></td></tr>').join('')+'</tbody></table></div><div class="notice" style="margin-top:12px">Remove सदस्य की referral/profile entry हटाता है; यह Supabase Authentication से login account को delete नहीं करता।</div>';
  }catch(err){target.innerHTML='<div class="notice">Supabase से सदस्य सूची नहीं आ सकी: '+escapeHtml(err.message||String(err))+'<br>यह लॉगिन/permission (RLS) या database connection की समस्या हो सकती है।</div>';}
+}
+async function changeMemberStatus(userId,status){
+ const action=status==='approved'?'Approve':'Reject';
+ if(!confirm(action+' this member?'))return;
+ try{
+  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
+  if(sessionError)throw sessionError;
+  const session=sessionData.session;if(!session)throw new Error('पहले लॉगिन करें।');
+  const {data,error}=await adminSupabase.from('member_profiles').update({approval_status:status,approved_at:status==='approved'?new Date().toISOString():null,approved_by:status==='approved'?session.user.id:null}).eq('user_id',userId).eq('workspace_owner_id',session.user.id).select('user_id');
+  if(error)throw error;if(!data||!data.length)throw new Error('कोई बदलाव नहीं हुआ। Admin permission / workspace owner जाँचें।');
+  await loadRegisteredMembers();alert('Member status updated: '+action);
+ }catch(err){alert('Status update नहीं हुआ: '+(err.message||String(err)));}
+}
+async function removeMemberProfile(userId,fullName){
+ if(!confirm('क्या '+fullName+' की member profile और Referral ID entry हटानी है? यह login account को delete नहीं करेगा.'))return;
+ try{
+  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
+  if(sessionError)throw sessionError;
+  const session=sessionData.session;if(!session)throw new Error('पहले लॉगिन करें।');
+  const {data,error}=await adminSupabase.from('member_profiles').delete().eq('user_id',userId).eq('workspace_owner_id',session.user.id).select('user_id');
+  if(error)throw error;if(!data||!data.length)throw new Error('Profile नहीं हटी। Admin permission / workspace owner जाँचें।');
+  await loadRegisteredMembers();alert('Member profile removed.');
+ }catch(err){alert('Remove नहीं हुआ: '+(err.message||String(err)));}
 }
 function render(){let c=$('#content');$('#topTitle').textContent=titles[page];$('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));let html='';
 if(page==='overview')html=overview();
