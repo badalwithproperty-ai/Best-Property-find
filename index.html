@@ -13,7 +13,15 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>TEAM WORK</title>
+<title>Team Work CRM | Real Estate Leads, Plot Inventory & Sales Team</title>
+<meta name="description" content="Team Work CRM helps real estate teams manage leads, plot and flat inventory, follow-ups, site visits, sales reports and team tasks in one workspace.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://badalwithproperty-ai.github.io/Best-Property-find/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Team Work CRM | Real Estate Sales Workspace">
+<meta property="og:description" content="Manage real estate leads, plot inventory, follow-ups, site visits and team performance with Team Work CRM.">
+<meta property="og:url" content="https://badalwithproperty-ai.github.io/Best-Property-find/">
+<meta name="theme-color" content="#075b3e">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f3f7f4;color:#17251f;font:16px system-ui,Arial}
@@ -201,6 +209,12 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 .profile-edit-avatar label{display:block;font-weight:700;margin-bottom:8px}
 .profile-edit-avatar input{max-width:100%;font-size:13px}
 
+
+.crm-greeting-avatar{overflow:hidden;flex:0 0 43px;padding:0}
+.crm-greeting-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
+.crm-drawer-avatar{overflow:hidden;flex:0 0 39px;padding:0}
+.crm-drawer-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
+
 </style>
 </head>
 <body>
@@ -274,7 +288,7 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
   <div class="pagehead menu-toggle"><div><div class="section-kicker">WORKSPACE</div><p class="muted">Your team overview, projects, tasks and progress in one place.</p></div><button onclick="toggleMenu()" aria-expanded="false" id="menuButton">☰ Menu</button></div>
   <div id="menuPanel" class="menu-panel hidden crm-drawer" aria-label="Main menu">
 <div class="crm-drawer-brand"><img src="./icons/icon.svg" alt="Team Work CRM"><div><strong>Team Work CRM</strong><small>TOGETHER WE GROW</small></div></div>
-<div class="crm-drawer-user"><span class="crm-drawer-avatar">♟</span><div><strong>Team Member</strong><small>CRM Workspace</small></div></div>
+<div class="crm-drawer-user"><span class="crm-drawer-avatar">'+((user&&user.user_metadata&&user.user_metadata.avatar_url)?'<img src="'+escapeHTML(user.user_metadata.avatar_url)+'" alt="Profile photo" onerror="this.style.display=\'none\';this.parentNode.textContent=\'♟\'">':'♟')+'</span><div><strong>'+escapeHTML((user&&user.user_metadata&&user.user_metadata.full_name)||'Team Member')+'</strong><small>CRM Workspace</small></div></div>
 <button class="crm-menu-active" onclick="goPage('dashboard');toggleMenu(false)">⌂ <span>Dashboard</span></button>
 <button onclick="goPage('customers');toggleMenu(false)">♟ <span>Leads</span></button>
 <button onclick="goPage('followups');toggleMenu(false)">◷ <span>Follow Up</span></button>
@@ -283,7 +297,7 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 <button onclick="goPage('team');toggleMenu(false)">♧ <span>Team</span></button>
 <button onclick="goPage('settings');toggleMenu(false)">⚙ <span>Settings</span></button>
 <div class="crm-menu-divider"></div>
-<button onclick="goPage('inventory');toggleMenu(false)">⌂ <span>Property Inventory</span></button>
+<button onclick="goPage('inventory');toggleMenu(false)">▦ <span>Property Inventory</span></button>
 <button onclick="goPage('projects');toggleMenu(false)">▦ <span>Projects</span></button>
 <button onclick="goPage('tasks');toggleMenu(false)">✓ <span>Tasks</span></button>
 <button onclick="goPage('associates');toggleMenu(false)">♙ <span>Associates</span></button>
