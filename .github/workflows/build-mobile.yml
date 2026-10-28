@@ -27,6 +27,22 @@ jobs:
           java-version: '21'
       - name: Install dependencies
         run: npm install
+      - name: Validate inline JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+            .filter(m => !/\bsrc\s*=/.test(m[1]))
+            .map(m => m[2]);
+          if (!scripts.length) throw new Error('No inline JavaScript blocks found');
+          scripts.forEach((source, i) => {
+            const file = `/tmp/team-work-inline-${i}.js`;
+            fs.writeFileSync(file, source);
+            require('child_process').execFileSync(process.execPath, ['--check', file], {stdio:'inherit'});
+          });
+          console.log(`Validated ${scripts.length} inline JavaScript block(s).`);
+          NODE
       - name: Prepare web app
         run: |
           npm run copy:web
