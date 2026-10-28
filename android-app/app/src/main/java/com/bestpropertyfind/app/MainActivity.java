@@ -11,6 +11,8 @@ import android.view.KeyEvent;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private static final String ADMIN_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/admin.html";
+
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         webView = new WebView(this);
@@ -19,10 +21,12 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         setContentView(webView);
-        if (savedInstanceState == null) webView.loadUrl("https://badalwithproperty-ai.github.io/Best-Property-find/");
+        if (savedInstanceState == null) webView.loadUrl(ADMIN_URL);
         else webView.restoreState(savedInstanceState);
     }
     @Override protected void onSaveInstanceState(Bundle outState) { super.onSaveInstanceState(outState); if (webView != null) webView.saveState(outState); }
