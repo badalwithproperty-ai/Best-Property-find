@@ -594,7 +594,7 @@ if(page==='followups'){
  const titles={customers:'Customers & Leads',inventory:'Plot & Flat Inventory',associates:'Associates & Team',activities:'Calls & Activities'};
  const config={
   customers:[['name','Name'],['phone','Phone'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Status'],['followUpDate','Follow-up Date'],['followUpTime','Follow-up Time']],
-  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status']],
+  inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status'],['reference','Reference Name']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity'],['count','Call count'],['notes','Notes']]
  };
@@ -603,10 +603,10 @@ if(page==='followups'){
   let val=x[f[0]];
   if(page==='customers'&&f[0]==='status')val=normStatus(val);
   return '<td>'+escapeHTML(val||'—')+'</td>';
- }).join('')+'<td><button class="small secondary" onclick="editRecord(\''+page+'\',\''+escapeHTML(x.id)+'\')">Edit</button> '+
- '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td></tr>').join('');
- c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+
- tbl(fields.map(f=>f[1]).concat(['Action']),rows);
+ }).join('')+(page==='inventory'?'':'<td><button class="small secondary" onclick="editRecord(\\''+page+'\\',\\''+escapeHTML(x.id)+'\\')">Edit</button> '+
+ '<button class="small danger" onclick="del(\\''+page+'\\',\\''+escapeHTML(x.id)+'\\')">Delete</button></td>')+'</tr>').join('');
+ c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\\''+page+'\\')">+ Add New</button></div>'+
+ tbl(fields.map(f=>f[1]).concat(page==='inventory'?[]:['Action']),rows);
 }
 
 function editRecord(kind,id){
@@ -702,7 +702,7 @@ function exportAllCSV(){
   const rows=db[kind]||[];
   const headers=[...new Set(rows.flatMap(x=>Object.keys(x)))];
   if(!headers.length){
-   const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','location','rate','size','dimensions','status'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
+   const defaults={customers:['id','name','phone','email','location','requirement','budget','status','associate','followUpDate','followUpTime','followUpNotes'],inventory:['id','project','location','rate','size','dimensions','status','reference'],associates:['id','name','phone','email','role'],activities:['id','date','associate','customer','type','count','notes']}[kind];
    headers.push(...defaults);
   }
   const csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');
