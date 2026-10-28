@@ -392,7 +392,7 @@ const SUPABASE_KEY='sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
 let sb=null,user=null,mode='login',page='dashboard';
 // Compatibility alias for older dashboard fragments; always set from the active session.
 let currentProfile=null;
-let workspaceOwnerId=null,isWorkspaceOwner=true,teamMembers=[];
+let workspaceOwnerId=null,isWorkspaceOwner=true,isTeamLeader=false,teamMembers=[];
 let authBusy=false,loading=false,saveBusy=false;
 let db={customers:[],inventory:[],associates:[],activities:[]};
 let workspaceExtras={};
@@ -553,7 +553,7 @@ $('authForm').addEventListener('submit',async e=>{
   const email=$('email').value.trim(),password=$('password').value;
   let result;
   if(mode==='signup'){
-   const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await withTimeout(sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname+'?confirmed=1',data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner}}}),'Registration request');
+   const joinOwner=new URLSearchParams(location.search).get('join');if(!joinOwner)throw new Error('Admin के registration link से register करें।');result=await withTimeout(sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname+'?confirmed=1',data:{full_name:$('fullName').value.trim(),phone:$('phone').value.trim(),designation:$('designation').value,workspace_owner_id:joinOwner,sponsor_user_id:new URLSearchParams(location.search).get('sponsor')||null}}}),'Registration request');
   }else result=await withTimeout(sb.auth.signInWithPassword({email,password}),'Login request');
   if(result.error)throw result.error;
   if(mode==='signup'&&!result.data.session){
@@ -591,13 +591,13 @@ async function logout(){
 
 async function load(authUser){
  if(!sb||!authUser||loading)return;
- loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
+ loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;isTeamLeader=false;teamMembers=[];setStatus('Connecting to cloud...');
  try{
   const meta=authUser.user_metadata||{};
   // Do not treat a referral account as a Main Admin just because it lacks legacy email-signup metadata.
   // Full hierarchy data filtering must be enabled before referral members are allowed into shared CRM records.
   const {data:referralProfile,error:referralProfileError}=await withTimeout(
-   sb.from('member_profiles').select('user_id,workspace_owner_id,approval_status,referral_id').eq('user_id',authUser.id).maybeSingle(),
+   sb.from('member_profiles').select('user_id,workspace_owner_id,approval_status,referral_id,designation,sponsor_user_id').eq('user_id',authUser.id).maybeSingle(),
    'Referral account check'
   );
   if(referralProfileError&&referralProfileError.code!=='42P01')throw referralProfileError;
@@ -621,7 +621,7 @@ async function load(authUser){
      message('आपका account approved है, लेकिन Admin workspace access लिंक नहीं हुआ है। Admin से दोबारा approval जाँचने को कहें।');
      return;
     }
-    workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;
+    workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;isTeamLeader=String(referralProfile.designation||'').toLowerCase()==='team leader';
    }else{
     workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
    }
@@ -639,7 +639,7 @@ async function load(authUser){
    const {data:existingRequest,error:lookupError}=await withTimeout(sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle(),'Registration request check');
    if(lookupError)throw lookupError;
    if(!existingRequest){
-    const {error:requestError}=await withTimeout(sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'}),'Registration request save');
+    const sponsorUserId=meta.sponsor_user_id||null;\n    const {error:requestError}=await withTimeout(sb.from('team_join_requests').insert({workspace_owner_id:workspaceOwnerId,user_id:authUser.id,sponsor_user_id:sponsorUserId,full_name:meta.full_name,phone:meta.phone,email:authUser.email||'',designation:meta.designation,status:'pending'}),'Registration request save');
     if(requestError)throw requestError;
    }
    if(!membership){
@@ -819,17 +819,19 @@ function renderTeamWorkspace(c){
 
 async function renderTeamAccess(c){
  if(!user||!sb){c.innerHTML='<div class="panel">Please login again.</div>';return;}
+ if(!isWorkspaceOwner&&!isTeamLeader){c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Team Access केवल Main Admin और Team Leader के लिए है।</p></div>';return;}
  c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Loading registration requests…</p></div>';
- let reqs=[],error=null;try{const result=await withTimeout(sb.from('team_join_requests').select('*').eq('workspace_owner_id',user.id).order('created_at',{ascending:false}),'Team requests load');reqs=result.data||[];error=result.error}catch(e){error=e}
- if(error){c.innerHTML='<div class="panel"><h2>Join Requests</h2><p class="err">Requests load नहीं हुईं: '+escapeHTML(error.message||String(error))+'</p><p>यदि request नहीं दिखती, तो Supabase में team_join_requests की SELECT policy Admin को अपनी workspace की requests पढ़ने देनी चाहिए।</p><button onclick="renderTeamAccess(document.getElementById(\'content\'))">Refresh Requests</button></div>';return;}
+ let query=sb.from('team_join_requests').select('*').eq('workspace_owner_id',workspaceOwnerId).order('created_at',{ascending:false});
+ if(isTeamLeader)query=query.eq('sponsor_user_id',user.id);
+ let reqs=[],error=null;try{const result=await withTimeout(query,'Team requests load');reqs=result.data||[];error=result.error}catch(e){error=e}
+ if(error){c.innerHTML='<div class="panel"><h2>Join Requests</h2><p class="err">Requests load नहीं हुईं: '+escapeHTML(error.message||String(error))+'</p><button onclick="renderTeamAccess(document.getElementById(\\'content\\'))">Refresh Requests</button></div>';return;}
  const pendingCount=reqs.filter(r=>r.status==='pending').length;
- const link=location.origin+location.pathname+'?join='+encodeURIComponent(user.id);
- c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">यह link team के साथ share करें। नई registration requests यहाँ अपने-आप refresh होंगी। Approval तक CRM access नहीं मिलेगा।</p><input id="joinLink" readonly value="'+escapeHTML(link)+'"><div class="actions"><button onclick="copyJoinLink()">Copy Registration Link</button><button class="secondary" onclick="renderTeamAccess(document.getElementById(\'content\'))">↻ Refresh Requests</button></div></div>'+
- '<div class="panel"><h3>Join Requests ('+reqs.length+')</h3><p class="muted">Pending approval: <strong>'+pendingCount+'</strong> · यह सूची 10 सेकंड में refresh होती है, जब Team Access खुला हो।</p>'+tbl(['Name','Mobile','Email','Designation','Date','Status','Action'],(reqs||[]).map(r=>'<tr><td>'+escapeHTML(r.full_name||'—')+'</td><td>'+escapeHTML(r.phone||'—')+'</td><td>'+escapeHTML(r.email||'—')+'</td><td>'+escapeHTML(r.designation||'—')+'</td><td>'+fmtDate((r.created_at||'').slice(0,10))+'</td><td>'+escapeHTML(r.status||'pending')+'</td><td>'+(r.status==='pending'?'<button onclick="approveMember(\''+escapeHTML(r.id)+'\')">Approve</button> <button class="danger" onclick="rejectMember(\''+escapeHTML(r.id)+'\')">Reject</button>':'—')+'</td></tr>').join(''))+'</div>';
+ const link=location.origin+location.pathname+'?join='+encodeURIComponent(workspaceOwnerId)+(isTeamLeader?'&sponsor='+encodeURIComponent(user.id):'');
+ c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">'+(isTeamLeader?'अपने team members का registration link share करें।':'Team registration link share करें।')+' Approval तक CRM access नहीं मिलेगा।</p><input id="joinLink" readonly value="'+escapeHTML(link)+'"><div class="actions"><button onclick="copyJoinLink()">Copy Registration Link</button><button class="secondary" onclick="renderTeamAccess(document.getElementById(\\'content\\'))">↻ Refresh Requests</button></div></div>'+
+ '<div class="panel"><h3>Join Requests ('+reqs.length+')</h3><p class="muted">Pending approval: <strong>'+pendingCount+'</strong></p>'+tbl(['Name','Mobile','Email','Designation','Date','Status','Action'],reqs.map(r=>'<tr><td>'+escapeHTML(r.full_name||'—')+'</td><td>'+escapeHTML(r.phone||'—')+'</td><td>'+escapeHTML(r.email||'—')+'</td><td>'+escapeHTML(r.designation||'—')+'</td><td>'+fmtDate((r.created_at||'').slice(0,10))+'</td><td>'+escapeHTML(r.status||'pending')+'</td><td>'+(r.status==='pending'?'<button onclick="approveMember(\\''+escapeHTML(r.id)+'\\')">Approve</button> <button class="danger" onclick="rejectMember(\\''+escapeHTML(r.id)+'\\')">Reject</button>':'—')+'</td></tr>').join(''))+'</div>';
  if(window.teamAccessRefreshTimer)clearInterval(window.teamAccessRefreshTimer);
- window.teamAccessRefreshTimer=setInterval(()=>{if(page==='teamaccess'&&isWorkspaceOwner&&!document.hidden)renderTeamAccess(document.getElementById('content'));},10000);
+ window.teamAccessRefreshTimer=setInterval(()=>{if(page==='teamaccess'&&(isWorkspaceOwner||isTeamLeader)&&!document.hidden)renderTeamAccess(document.getElementById('content'));},10000);
 }
-
 
 let pendingProfilePhoto='';
 function previewProfilePhoto(event){
@@ -1120,8 +1122,8 @@ async function del(kind,id){
  const ok=await save();if(!ok)db[kind]=old;
 }
 function copyJoinLink(){const el=$('joinLink');if(!el)return;el.select();try{document.execCommand('copy');alert('Registration link copied.')}catch(e){alert('Link select करके Copy करें।')}}
-async function approveMember(id){if(!isWorkspaceOwner||!confirm('इस registration को approve करें?'))return;const {data:r,error}=await sb.from('team_join_requests').update({status:'approved'}).eq('id',id).eq('workspace_owner_id',user.id).select('*').maybeSingle();if(error||!r){alert('Approve failed: '+(error?.message||'Request नहीं मिली'));return}const {error:addError}=await sb.from('workspace_members').upsert({workspace_owner_id:user.id,member_user_id:r.user_id,role:'associate'},{onConflict:'workspace_owner_id,member_user_id'});if(addError){alert('Approval हुई लेकिन access जोड़ने में error: '+addError.message);return}await load(user);goPage('teamaccess')}
-async function rejectMember(id){if(!isWorkspaceOwner||!confirm('इस request को reject करें?'))return;const {error}=await sb.from('team_join_requests').update({status:'rejected'}).eq('id',id).eq('workspace_owner_id',user.id);if(error){alert('Reject failed: '+error.message);return}render()}
+async function approveMember(id){if(!(isWorkspaceOwner||isTeamLeader)||!confirm('इस registration को approve करें?'))return;let q=sb.from('team_join_requests').update({status:'approved'}).eq('id',id).eq('workspace_owner_id',workspaceOwnerId);if(isTeamLeader)q=q.eq('sponsor_user_id',user.id);const {data:r,error}=await q.select('*').maybeSingle();if(error||!r){alert('Approve failed: '+(error?.message||'Request नहीं मिली या database permission बाकी है'));return}const {error:profileError}=await sb.from('member_profiles').update({approval_status:'approved',approved_at:new Date().toISOString(),approved_by:user.id}).eq('user_id',r.user_id).eq('workspace_owner_id',workspaceOwnerId);if(profileError){alert('Request approved, लेकिन profile approval failed: '+profileError.message);return}const {error:addError}=await sb.from('workspace_members').upsert({workspace_owner_id:workspaceOwnerId,member_user_id:r.user_id,role:'associate'},{onConflict:'workspace_owner_id,member_user_id'});if(addError){alert('Profile approved, लेकिन workspace access जोड़ने में error: '+addError.message);return}await load(user);goPage('teamaccess')}
+async function rejectMember(id){if(!(isWorkspaceOwner||isTeamLeader)||!confirm('इस request को reject करें?'))return;let q=sb.from('team_join_requests').update({status:'rejected'}).eq('id',id).eq('workspace_owner_id',workspaceOwnerId);if(isTeamLeader)q=q.eq('sponsor_user_id',user.id);const {error}=await q;if(error){alert('Reject failed: '+error.message);return}render()}
 
 async function removeTeamMember(uid){
  if(!isWorkspaceOwner||!user||!confirm('इस team member का access हटाएँ?'))return;
