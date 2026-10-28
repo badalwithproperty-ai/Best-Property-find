@@ -11,7 +11,7 @@ import android.view.KeyEvent;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String ADMIN_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/admin.html";
+    private static final String ADMIN_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/admin.html?v=1.0.4";
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
