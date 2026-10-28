@@ -636,6 +636,10 @@ async function load(authUser){
    membership=data;
   }
   if(!isWorkspaceOwner&&meta.workspace_owner_id===workspaceOwnerId&&meta.full_name&&meta.phone&&meta.designation){
+   if(!referralProfile){
+    const {error:profileInsertError}=await withTimeout(sb.from('member_profiles').insert({user_id:authUser.id,workspace_owner_id:workspaceOwnerId,sponsor_user_id:meta.sponsor_user_id||null,full_name:meta.full_name,phone:meta.phone,designation:meta.designation,approval_status:'pending'}),'Pending member profile save');
+    if(profileInsertError&&profileInsertError.code!=='23505')throw profileInsertError;
+   }
    const {data:existingRequest,error:lookupError}=await withTimeout(sb.from('team_join_requests').select('id,status').eq('user_id',authUser.id).maybeSingle(),'Registration request check');
    if(lookupError)throw lookupError;
    if(!existingRequest){
