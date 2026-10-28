@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         console.error("OTP_SEND_ERROR:", otpError.message);
         await admin.from("member_profiles").delete().eq("user_id", created.user.id);
         await admin.auth.admin.deleteUser(created.user.id);
-        return json({ error: "SMS OTP could not be sent. Check Supabase Phone Auth and SMS provider settings." }, 502);
+        return json({ error: "SMS OTP could not be sent.", details: otpError.message }, 502);
       }
       return json({ message: "OTP sent. Verify your mobile number to submit registration for Main Admin approval.", referral_id: referralId }, 201);
     }
