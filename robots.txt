@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://badalwithproperty-ai.github.io/Best-Property-find/sitemap.xml
