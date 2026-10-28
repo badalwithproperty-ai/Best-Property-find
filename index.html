@@ -648,7 +648,7 @@ async function load(authUser){
    }
    if(!membership){
     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
-    setStatus('Awaiting approval');message(existingRequest?.status==='rejected'?'आपकी request reject हुई है। Admin से संपर्क करें।':'आपकी registration request Admin को भेज दी गई है। Approval तक CRM access नहीं मिलेगा।');return;
+    setStatus('Awaiting approval');message(existingRequest?.status==='rejected'?'आपकी request reject हुई है। Admin से संपर्क करें।':'आपकी registration request Team Leader/Admin को भेज दी गई है। Approval तक CRM access नहीं मिलेगा।');return;
    }
    if(existingRequest?.status==='rejected'){
     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
