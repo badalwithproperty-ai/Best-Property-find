@@ -317,6 +317,8 @@ const SUPABASE_URL='https://gevdyoshdxquxxavchyb.supabase.co';
 const SUPABASE_KEY='sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
 
 let sb=null,user=null,mode='login',page='dashboard';
+// Compatibility alias for older dashboard fragments; always set from the active session.
+let currentProfile=null;
 let workspaceOwnerId=null,isWorkspaceOwner=true,teamMembers=[];
 let authBusy=false,loading=false,saveBusy=false;
 let db={customers:[],inventory:[],associates:[],activities:[]};
@@ -515,7 +517,7 @@ async function logout(){
 
 async function load(authUser){
  if(!sb||!authUser||loading)return;
- loading=true;user=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
+ loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=true;teamMembers=[];setStatus('Connecting to cloud...');
  try{
   const meta=authUser.user_metadata||{};
   // Do not treat a referral account as a Main Admin just because it lacks legacy email-signup metadata.
@@ -590,7 +592,7 @@ async function load(authUser){
   setStatus('Cloud connected');render();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
-  user=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
+  user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
   message('Cloud database error: '+err.message,true);
  }finally{loading=false}
 }
