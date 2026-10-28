@@ -32,7 +32,7 @@ const emptyAdminData=()=>({projects:[{id:1,name:'New Project',location:'Add loca
 let data;try{data=JSON.parse(localStorage.getItem(key))||null}catch(e){}
 if(!data)data=emptyAdminData();
 let crmLive={inventory:[],leads:[],associates:[],activities:[],projects:[],tasks:[],attendance:[],members:[],updatedAt:null};
-let page='overview',filter='',adminAuthorized=false,adminOwnerId=null,adminSaveQueue=Promise.resolve(),cloudAdminReady=false,crmRefreshTimer=null;
+let page='overview',filter='',adminAuthorized=false,adminOwnerId=null,adminSaveQueue=Promise.resolve(),cloudAdminReady=false,crmRefreshTimer=null,crmRealtimeChannel=null,realtimeRefreshBusy=false;
 function persist(action,detail){
  data.audit.unshift({at:new Date().toLocaleString(),action,detail});data.audit=data.audit.slice(0,100);
  localStorage.setItem(key,JSON.stringify(data));
@@ -72,7 +72,9 @@ function crmLiveSection(){
  return '<section class="panel" style="margin-top:16px"><div class="pagehead"><div><h2>CRM Live Sync</h2><p class="muted">CRM में सेव हुआ डेटा यहाँ अपने-आप refresh होता है। आखिरी sync: '+escapeHtml(crmLive.updatedAt||'Loading…')+'</p></div><button class="secondary" onclick="refreshCrmLiveData().then(()=>{render();toast(\'CRM data refreshed\')}).catch(e=>toast(\'Sync failed: \'+e.message))">↻ Refresh Now</button></div><div class="stats">'+stat('CRM LEADS',leads.length,'◎','CRM से synced')+stat('PLOT / FLAT INVENTORY',inv.length,'▦','CRM inventory')+stat('ASSOCIATES',associates.length,'♙','CRM team records')+stat('ACTIVITIES',acts.length,'✓','Calls and follow-ups')+'</div><div class="two"><section class="panel"><h3>Latest CRM Inventory</h3>'+table(['Plot / Flat','Project','Size','Rate','Status'],inventoryRows)+'</section><section class="panel"><h3>Latest CRM Leads</h3>'+table(['Customer','Mobile','Requirement','Status'],leadRows)+'</section><section class="panel"><h3>CRM Associates</h3>'+table(['Name','Mobile','Role'],associateRows)+'</section><section class="panel"><h3>CRM Activities</h3>'+table(['Date','Associate','Customer','Type','Notes / Count'],activityRows)+'</section></div><div class="two"><section class="panel"><h3>CRM Projects</h3>'+table(['Project','Location','Status'],projectRows)+'</section><section class="panel"><h3>CRM Tasks</h3>'+table(['Task','Assigned To','Due Date','Status'],taskRows)+'</section></div><h3>CRM Attendance</h3>'+table(['Employee','Date','Check-in','Check-out','Office / Site'],attendanceRows)+'<h3>Registered Members</h3>'+table(['Name','Mobile','Referral ID','Designation','Approval'],members.slice(0,10).map(m=>'<tr><td>'+escapeHtml(m.full_name||'—')+'</td><td>'+escapeHtml(m.phone||'—')+'</td><td>'+escapeHtml(m.referral_id||'—')+'</td><td>'+escapeHtml(m.designation||'—')+'</td><td>'+pill(m.approval_status||'—')+'</td></tr>').join(''))+'</section>';
 }
 async function refreshCrmLiveData(){
- if(!adminSupabase||!adminOwnerId||!adminAuthorized)return;
+ if(!adminSupabase||!adminOwnerId||!adminAuthorized||realtimeRefreshBusy)return;
+ realtimeRefreshBusy=true;
+ try{
  const [stateRes,leadRes,memberRes]=await Promise.all([
   adminSupabase.from('workspace_state').select('data,updated_at').eq('owner_id',adminOwnerId).maybeSingle(),
   adminSupabase.from('team_leads').select('id,lead_data,created_at,updated_at').eq('workspace_owner_id',adminOwnerId).order('updated_at',{ascending:false}).limit(500),
@@ -204,6 +206,7 @@ async function adminLogin(event){
  }finally{
   button.disabled=false;button.textContent='Login to Admin Console';
  }
+ }finally{realtimeRefreshBusy=false;}
 }
 async function initializeAdminConsole(){
  try{
@@ -228,6 +231,12 @@ async function initializeAdminConsole(){
   $('#topTitle').textContent='Admin Console · Cloud Synced';
   await refreshCrmLiveData();
   if(!crmRefreshTimer)crmRefreshTimer=setInterval(()=>{if(adminAuthorized)refreshCrmLiveData().catch(err=>console.warn('CRM live refresh failed',err));},30000);
+  if(!crmRealtimeChannel&&adminSupabase.channel){
+   crmRealtimeChannel=adminSupabase.channel('team-work-crm-live-'+adminOwnerId)
+    .on('postgres_changes',{event:'*',schema:'public',table:'workspace_state',filter:'owner_id=eq.'+adminOwnerId},()=>{refreshCrmLiveData().catch(err=>console.warn('CRM realtime refresh failed',err));})
+    .on('postgres_changes',{event:'*',schema:'public',table:'team_leads',filter:'workspace_owner_id=eq.'+adminOwnerId},()=>{refreshCrmLiveData().catch(err=>console.warn('Lead realtime refresh failed',err));})
+    .subscribe();
+  }
   render();
  }catch(err){
   adminAuthorized=false;
