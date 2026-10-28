@@ -416,14 +416,28 @@ async function load(authUser){
   if(referralProfileError&&referralProfileError.code!=='42P01')throw referralProfileError;
   if(referralProfile){
    if(referralProfile.workspace_owner_id!==authUser.id){
-    user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
-    setStatus(referralProfile.approval_status==='approved'?'Hierarchy setup pending':'Awaiting approval');
-    message(referralProfile.approval_status==='approved'
-      ?'आपका Referral account approved है, लेकिन direct-recruit data permissions अभी सुरक्षित रूप से लागू नहीं हुए हैं। सुरक्षा के लिए CRM access फिलहाल बंद है। Main Admin hierarchy setup पूरा करें।'
-      :'आपकी registration Main Admin approval का इंतज़ार कर रही है। Approval तक CRM access नहीं मिलेगा।');
-    return;
+    if(referralProfile.approval_status!=='approved'){
+     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+     setStatus('Awaiting approval');
+     message('आपकी registration Main Admin approval का इंतज़ार कर रही है। Approval तक CRM access नहीं मिलेगा।');
+     return;
+    }
+    const {data:linkedMembership,error:linkedMembershipError}=await withTimeout(
+     sb.from('workspace_members').select('workspace_owner_id,member_user_id,role')
+      .eq('workspace_owner_id',referralProfile.workspace_owner_id).eq('member_user_id',authUser.id).maybeSingle(),
+     'Referral workspace membership check'
+    );
+    if(linkedMembershipError)throw linkedMembershipError;
+    if(!linkedMembership){
+     user=null;$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('out').classList.add('hidden');
+     setStatus('Workspace access pending');
+     message('आपका account approved है, लेकिन Admin workspace access लिंक नहीं हुआ है। Admin से दोबारा approval जाँचने को कहें।');
+     return;
+    }
+    workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;
+   }else{
+    workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
    }
-   workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
   }
   if(meta.workspace_owner_id){workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;}
   const isSelfRegistrant=Boolean(meta.workspace_owner_id&&meta.full_name&&meta.phone&&meta.designation);
