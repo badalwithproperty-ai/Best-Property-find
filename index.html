@@ -179,7 +179,7 @@ button{border-radius:10px;background:linear-gradient(135deg,#0a7650,#075338);box
 
 <script>
 (function(){
- var showBootError=function(text){var s=document.getElementById("status");if(s)s.textContent="Page error";var m=document.getElementById("msg");if(m){m.textContent=text;m.classList.remove("hidden");m.classList.add("err")}};
+ var showBootError=function(text){var s=document.getElementById("status");if(s)s.textContent="Page error";["refMsg","msg"].forEach(function(id){var m=document.getElementById(id);if(m){m.textContent=text;m.classList.remove("hidden");m.classList.add("err")}});var a=document.getElementById("auth");if(a)a.classList.remove("hidden");var sp=document.getElementById("splash");if(sp)sp.classList.add("hide")};
  window.addEventListener("error",function(e){showBootError("JavaScript error: "+(e.message||"unknown error")+" ("+(e.filename||"page")+(e.lineno?":"+e.lineno:"")+")")});
  window.addEventListener("unhandledrejection",function(e){var r=e.reason;showBootError("Startup error: "+(r&&r.message?r.message:String(r))) });
  document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("auth");if(a)a.classList.remove("hidden");var s=document.getElementById("status");if(s&&s.textContent==="Connecting...")s.textContent="Page loaded; starting CRM…"});
