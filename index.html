@@ -151,6 +151,24 @@ header{background:linear-gradient(120deg,#043c2b,#087448)!important;border-botto
 @media(max-width:600px){.lead-card{padding:11px;gap:9px}.lead-info-grid{grid-template-columns:1fr 1fr}.lead-contact-actions a{font-size:12px}.report-bar-row{grid-template-columns:88px 1fr 26px;gap:7px}}
 
 .settings-list{display:grid;gap:8px;margin:16px 0}.settings-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;background:#fff!important;color:#163d2d!important;border:1px solid #e0e9e2;box-shadow:none!important}.settings-item>span{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#eaf5eb;color:#087348;font-size:19px}.settings-item>div{display:flex;flex:1;flex-direction:column;gap:4px}.settings-item strong{font-size:14px}.settings-item small{font-size:12px;color:#6b7b70}.settings-item>b{font-size:22px;color:#7b8c80}
+
+.source-chart-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:10px 0}
+.source-donut{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.source-donut>div{width:98px;height:98px;border-radius:50%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.source-donut strong{font-size:25px;color:#075b3f}.source-donut small{font-size:12px;color:#64736c}
+.source-legend{flex:1;min-width:170px}.source-legend>div{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:7px 0;border-bottom:1px solid #e7eee9;font-size:13px}
+.source-legend span{display:flex;align-items:center;gap:8px}.source-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.lead-card{display:flex!important;align-items:center!important;gap:12px!important;text-align:left!important;width:100%;background:white!important;color:#1c3027!important;border:1px solid #e0e9e3!important;padding:12px!important;border-radius:14px!important;box-shadow:0 2px 10px #063b2c08!important}
+.lead-avatar{width:42px;height:42px;border-radius:50%;background:#e3f0e6;color:#087348;display:grid;place-items:center;font-weight:800;flex-shrink:0}
+.lead-card-main{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.lead-card-main small,.lead-card-side small{color:#68776f;font-size:11px}
+.lead-card-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.lead-list{display:grid;gap:8px}
+.lead-detail-head{display:flex;align-items:center;gap:14px;padding:12px 0}.lead-avatar.large{width:58px;height:58px;font-size:24px}
+.lead-contact-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.lead-contact-actions a{text-decoration:none;text-align:center;padding:12px 5px;background:#e5f2e8;color:#075b3e;border-radius:12px;font-weight:700;font-size:13px}
+.lead-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.lead-info-grid>div{padding:10px;border-radius:10px;background:#f5f8f5;min-width:0}.lead-info-grid small{display:block;color:#68776f;font-size:11px;margin-bottom:5px}.lead-info-grid strong{overflow-wrap:anywhere;font-size:13px}
+@media(max-width:600px){.source-chart-wrap{justify-content:center}.source-legend{width:100%}.lead-contact-actions a{font-size:12px}.lead-info-grid{gap:8px}}
+
 </style>
 </head>
 <body>
@@ -550,6 +568,18 @@ function tbl(headers,rows){
  '</tr></thead><tbody>'+(rows||'<tr><td colspan="'+headers.length+'">अभी कोई रिकॉर्ड नहीं है।</td></tr>')+
  '</tbody></table></div>';
 }
+
+function renderLeadSourceChart(){
+ const leads=db.customers||[];
+ const labels=['Website','Referral','Social Media','Walk-in','Other'];
+ const counts=labels.map(label=>leads.filter(x=>(x.source||'Other').toLowerCase()===label.toLowerCase()).length);
+ const total=counts.reduce((a,b)=>a+b,0);
+ const palette=['#1684d8','#2c9f76','#e5b341','#8a64c8','#9aa7a0'];
+ let cursor=0;
+ const segments=counts.map((n,i)=>{const start=cursor;cursor+=total?n/total*100:0;return palette[i]+' '+start+'% '+cursor+'%'}).join(',');
+ return '<div class="source-chart-wrap"><div class="source-donut" style="background:conic-gradient('+(total?segments:'#e8eee9 0% 100%')+')"><div><strong>'+total+'</strong><small>Leads</small></div></div><div class="source-legend">'+labels.map((label,i)=>'<div><span><i style="background:'+palette[i]+'"></i>'+label+'</span><strong>'+(total?Math.round(counts[i]/total*100):0)+'%</strong></div>').join('')+'</div></div>';
+}
+
 function statCards(items){
  return '<div class="stats">'+items.map(x=>
  '<div class="stat"><small>'+escapeHTML(x[0])+'</small><strong>'+escapeHTML(x[1])+'</strong></div>'
@@ -669,8 +699,7 @@ if(page==='followups'){
   c.innerHTML='<h2>Sales Reports</h2>'+statCards([
    ['Total Leads',total],['Active Leads',active],['Converted',converted],['Lost',lost],
    ['Calls Logged',calls],['Conversion Rate',total?((converted/total)*100).toFixed(1)+'%':'0%']
-  ])+'<div class="panel"><h3>Lead Status Summary</h3>'+
-   '<div class="panel"><h3>Lead Status Overview</h3><div class="report-bars">'+STATUSES.map(st=>{
+  ])+'<div class="panel"><h3>Lead Status Overview</h3><div class="report-bars">'+STATUSES.map(st=>{
     const n=db.customers.filter(x=>normStatus(x.status)===st).length;
     const pct=total?Math.round(n/total*100):0;
     return '<div class="report-bar-row"><span>'+escapeHTML(st)+'</span><div class="report-bar-track"><div class="report-bar-fill" style="width:'+pct+'%"></div></div><strong>'+n+'</strong></div>';
@@ -679,6 +708,7 @@ if(page==='followups'){
     const n=db.customers.filter(x=>normStatus(x.status)===s).length;
     return '<tr><td>'+s+'</td><td>'+n+'</td><td>'+(total?(n/total*100).toFixed(1):'0.0')+'%</td></tr>';
    }).join(''))+
+   '<div class="panel"><h3>Lead Source</h3>'+renderLeadSourceChart()+'</div>'+
    '<p class="muted">रिपोर्ट मौजूदा customer status और activities पर आधारित है। केवल दर्ज की गई calls गिनी जाती हैं।</p></div>';
   return;
  }
@@ -753,7 +783,7 @@ function openLeadDetails(id){
 function editRecord(kind,id){
  const old=id?db[kind].find(x=>x.id===id)||{}:{};
  const labels={
-  customers:[['name','Customer name'],['phone','Phone'],['email','Email'],['location','Location'],['requirement','Requirement'],['budget','Budget'],['status','Lead status'],['associate','Assigned Associate'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
+  customers:[['name','Customer name'],['phone','Mobile Number'],['email','Email'],['requirement','Property Interest'],['budget','Budget Range'],['location','Location'],['source','Lead Source'],['status','Lead status'],['associate','Assigned To'],['followUpDate','Next follow-up date'],['followUpTime','Follow-up time'],['followUpNotes','Follow-up notes']],
   inventory:[['project','Project Name'],['location','Project Location'],['rate','Basic Sales Price'],['size','Plot Size'],['dimensions','Plot Dimensions'],['status','Plot Status']],
   associates:[['name','Name'],['phone','Phone'],['email','Email'],['role','Role']],
   activities:[['date','Date'],['associate','Associate'],['customer','Customer'],['type','Activity type'],['count','Call count'],['notes','Notes']]
