@@ -11,7 +11,7 @@ import android.view.KeyEvent;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String ADMIN_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/admin.html?v=1.0.4";
+    private static final String CRM_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/?app=team-work-crm-v1.0.5";
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,7 +26,7 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         setContentView(webView);
-        if (savedInstanceState == null) webView.loadUrl(ADMIN_URL);
+        if (savedInstanceState == null) webView.loadUrl(CRM_URL);
         else webView.restoreState(savedInstanceState);
     }
     @Override protected void onSaveInstanceState(Bundle outState) { super.onSaveInstanceState(outState); if (webView != null) webView.saveState(outState); }
