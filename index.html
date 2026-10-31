@@ -403,6 +403,23 @@ body.more-open #app>.workspace-header,body.more-open #content,body.more-open #tw
 @media(max-width:380px){.tw-quick-actions.crm-quick-actions{gap:6px}.crm-quick-actions .ref-quick-action{padding:9px 6px!important}.ref-quick-action b{font-size:11px}}
 @media(min-width:700px){#auth{max-width:500px!important}.drawer-sheet{width:340px}}
 
+
+/* Final reference fidelity refinements for the four supplied mobile screens */
+#referralForm{display:none!important}
+#auth #legacyLogin{display:block!important}
+#auth #legacyLogin.hidden{display:block!important}
+#legacyLogin .login-referral-link{display:none!important}
+#auth .card{padding-top:22px!important}
+#authForm .field{position:relative}
+#authForm #email{padding-left:42px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23004732' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:14px center;background-size:18px}
+#authForm #password{padding-left:42px;padding-right:48px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23004732' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:14px center;background-size:17px}
+.password-visibility{position:absolute;right:7px;top:5px;height:38px;width:38px;padding:0!important;background:transparent!important;color:#7a8580!important;box-shadow:none!important;border:0!important;font-size:19px}
+#authForm #submit{font-weight:700}
+#auth .login-contact{font-size:12px}
+.drawer-links button[data-more-page="dashboard"]{background:transparent!important;color:#15291f!important}
+.drawer-links button.crm-menu-active{background:#e8f3eb!important;color:#075638!important}
+@media(max-width:380px){#auth{padding-left:16px;padding-right:16px}.login-logo{width:112px;height:112px}}
+
 </style>
 </head>
 <body>
@@ -447,7 +464,7 @@ body.more-open #app>.workspace-header,body.more-open #content,body.more-open #tw
     <form id="authForm">
       <div id="nameWrap" class="hidden"><div class="field"><label>Full name</label><input id="fullName" autocomplete="name"></div><div class="field"><label>Mobile number</label><input id="phone" type="tel" autocomplete="tel"></div><div class="field"><label>Designation</label><select id="designation"><option value="">Select designation</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Associate</option><option>Other</option></select></div><p class="muted">Admin के registration link से आएँ। Approval तक CRM access नहीं मिलेगा।</p></div>
       <div class="field login-identity-field"><label>Email / Mobile Number</label><input id="email" type="text" required autocomplete="username" placeholder="Email / Mobile Number"></div>
-      <div class="field"><label>Password</label><input id="password" type="password" minlength="6" required autocomplete="current-password"></div>
+      <div class="field login-password-field"><label>Password</label><input id="password" type="password" minlength="6" required autocomplete="current-password" placeholder="Password"><button type="button" class="password-visibility" aria-label="Show password" onclick="toggleLoginPassword()">◉</button></div>
       <div class="actions">
         <button id="submit" type="submit">Login</button>
         <button type="button" class="secondary hidden" id="modeBtn" onclick="toggleMode()">Create account</button>
@@ -524,7 +541,7 @@ function ensureSupabaseLibrary(){
   document.head.appendChild(script);
  });
 }
-function goPage(p){if(!RESTORABLE_PAGES.includes(p)&&p!=='more')p='dashboard';page=p;try{localStorage.setItem('twcrm_last_page',p)}catch(_){}toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
+function goPage(p){if(!RESTORABLE_PAGES.includes(p)&&p!=='more')p='dashboard';page=p;try{localStorage.setItem('twcrm_last_page',p)}catch(_){}document.querySelectorAll('.drawer-links [data-more-page]').forEach(b=>b.classList.toggle('crm-menu-active',b.dataset.morePage===p));toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
 function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);document.body.classList.toggle('more-open',open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open));if(open)window.scrollTo({top:0,behavior:'instant'})}
 document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile){if(tile.dataset.morePage==='admin'&&!isWorkspaceOwner){toggleMenu(false);return}goPage(tile.dataset.morePage)}if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
@@ -639,7 +656,7 @@ function toggleMode(){
 
 async function init(){
  setTimeout(()=>$('splash')?.classList.add('hide'),1800);
- showLogin();setReferralMode('login');setStatus('Loading CRM...');
+ showLogin();if(new URLSearchParams(location.search).has('join'))setReferralMode('register');else showLegacyLogin();setStatus('Loading CRM...');
  try{
   await ensureSupabaseLibrary();
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
@@ -697,6 +714,8 @@ async function resetPass(){
   message('यदि इस email का account है, तो reset link भेज दिया जाएगा।');
  }catch(err){message(err.message,true)}
 }
+function toggleLoginPassword(){const input=$('password');const button=document.querySelector('.password-visibility');if(!input||!button)return;input.type=input.type==='password'?'text':'password';button.setAttribute('aria-label',input.type==='password'?'Show password':'Hide password');button.textContent=input.type==='password'?'◉':'◎';}
+window.toggleLoginPassword=toggleLoginPassword;
 function showLogin(){
  user=null;loading=false;
  $('app').classList.add('hidden');$('auth').classList.remove('hidden');
