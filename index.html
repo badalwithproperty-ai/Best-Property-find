@@ -1151,7 +1151,7 @@ async function saveWhatsAppExtractedLeads(){
  const selected=[...document.querySelectorAll('[data-wa-save]:checked')].map(el=>Number(el.dataset.waSave));
  if(!selected.length){alert('कम से कम एक Lead चुनें।');return}
  const normalizeIndianPhone=value=>{
-  let digits=String(value||'').replace(/\\D/g,'');
+  let digits=String(value||'').replace(/\D/g,'');
   if(digits.length===12&&digits.startsWith('91'))digits=digits.slice(2);
   if(digits.length===11&&digits.startsWith('0'))digits=digits.slice(1);
   return digits;
@@ -1161,7 +1161,7 @@ async function saveWhatsAppExtractedLeads(){
   const phoneEl=document.querySelector('[data-wa-phone="'+i+'"]');
   return {i,name:(nameEl?.value||'').trim(),phone:normalizeIndianPhone(phoneEl?.value)};
  });
- const valid=rows.filter(x=>/^[6-9]\\d{9}$/.test(x.phone));
+ const valid=rows.filter(x=>/^[6-9]\d{9}$/.test(x.phone));
  const invalid=rows.length-valid.length;
  if(!valid.length){
   alert('चुने गए नंबर में कोई मान्य 10-digit Indian mobile number नहीं मिला। नंबर जाँचकर फिर Save करें।');
