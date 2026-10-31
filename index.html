@@ -389,7 +389,8 @@ body.more-open #menuPanel.crm-drawer{display:block!important}
 const SUPABASE_URL='https://gevdyoshdxquxxavchyb.supabase.co';
 const SUPABASE_KEY='sb_publishable_aog87IoJg5GAglWENwNK8A_cpT1dXtt';
 
-let sb=null,user=null,mode='login',page='dashboard';
+const RESTORABLE_PAGES=['dashboard','customers','tasks','reports','inventory','associates','activities','projects','calendar','team','attendance','followups','settings','profile','teamaccess','notifications','backup','security','contact','about','admin'];
+let sb=null,user=null,mode='login',page=(()=>{try{const saved=localStorage.getItem('twcrm_last_page');return RESTORABLE_PAGES.includes(saved)?saved:'dashboard'}catch(_){return 'dashboard'}})();
 // Compatibility alias for older dashboard fragments; always set from the active session.
 let currentProfile=null;
 let workspaceOwnerId=null,isWorkspaceOwner=true,isTeamLeader=false,teamMembers=[];
@@ -423,7 +424,7 @@ function ensureSupabaseLibrary(){
   document.head.appendChild(script);
  });
 }
-function goPage(p){page=p;toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
+function goPage(p){if(!RESTORABLE_PAGES.includes(p)&&p!=='more')p='dashboard';page=p;try{localStorage.setItem('twcrm_last_page',p)}catch(_){}toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
 function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);document.body.classList.toggle('more-open',open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open));if(open)window.scrollTo({top:0,behavior:'instant'})}
 document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile){if(tile.dataset.morePage==='admin'&&!isWorkspaceOwner){toggleMenu(false);return}goPage(tile.dataset.morePage)}if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
@@ -713,7 +714,7 @@ async function load(authUser){
   db={customers:secureCustomers,inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
-  setStatus('Cloud connected');setupWorkspaceRealtime();render();maybeAutoCheckIn();
+  setStatus('Cloud connected');if(!RESTORABLE_PAGES.includes(page)||(page==='admin'&&!isWorkspaceOwner))page='dashboard';setupWorkspaceRealtime();render();setBottomNav(page);maybeAutoCheckIn();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
