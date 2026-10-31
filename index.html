@@ -1146,26 +1146,58 @@ async function processWhatsAppScreenshots(files){
  }catch(err){progress.textContent='OCR error: '+err.message;alert(err.message)}
 }
 async function saveWhatsAppExtractedLeads(){
+ if(saveBusy)return;
+ if(!sb||!user){alert('Login session उपलब्ध नहीं है। पहले Login करें।');return}
  const selected=[...document.querySelectorAll('[data-wa-save]:checked')].map(el=>Number(el.dataset.waSave));
- const rows=selected.map(i=>({i,name:(('[data-wa-name="'+i+'"]')&&$('[data-wa-name="'+i+'"]')?.value||'').trim(),phone:(('[data-wa-phone="'+i+'"]')&&$('[data-wa-phone="'+i+'"]')?.value||'').replace(/\D/g,'')})).filter(x=>/^[6-9]\d{9}$/.test(x.phone));
- if(!rows.length){alert('कम से कम एक सही 10-digit mobile number चुनें।');return}
- const unique=rows.filter((x,i)=>rows.findIndex(y=>y.phone===x.phone)===i&&!db.customers.some(y=>String(y.phone||'').replace(/\D/g,'').slice(-10)===x.phone));
- if(!unique.length){alert('चुने गए सभी नंबर पहले से मौजूद हैं।');return}
+ if(!selected.length){alert('कम से कम एक Lead चुनें।');return}
+ const normalizeIndianPhone=value=>{
+  let digits=String(value||'').replace(/\\D/g,'');
+  if(digits.length===12&&digits.startsWith('91'))digits=digits.slice(2);
+  if(digits.length===11&&digits.startsWith('0'))digits=digits.slice(1);
+  return digits;
+ };
+ const rows=selected.map(i=>{
+  const nameEl=document.querySelector('[data-wa-name="'+i+'"]');
+  const phoneEl=document.querySelector('[data-wa-phone="'+i+'"]');
+  return {i,name:(nameEl?.value||'').trim(),phone:normalizeIndianPhone(phoneEl?.value)};
+ });
+ const valid=rows.filter(x=>/^[6-9]\\d{9}$/.test(x.phone));
+ const invalid=rows.length-valid.length;
+ if(!valid.length){
+  alert('चुने गए नंबर में कोई मान्य 10-digit Indian mobile number नहीं मिला। नंबर जाँचकर फिर Save करें।');
+  return;
+ }
+ const seen=new Set();
+ const existing=new Set((db.customers||[]).map(x=>normalizeIndianPhone(x.phone)));
+ const unique=valid.filter(x=>{
+  if(seen.has(x.phone)||existing.has(x.phone))return false;
+  seen.add(x.phone);return true;
+ });
+ if(!unique.length){alert('चुने गए सभी मोबाइल नंबर पहले से Leads में मौजूद हैं।');return}
  const now=new Date().toISOString();
- const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name,phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from WhatsApp screenshot'},updated_at:now}));
+ const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name||'WhatsApp Lead',phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from WhatsApp screenshot'},updated_at:now}));
  saveBusy=true;
+ const saveBtn=$('waSaveLeads');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Saving…'}
  try{
-  if(!user||!sb)throw new Error('Login session उपलब्ध नहीं है। कृपया दोबारा Login करें।');
-  const {data,error}=await sb.from('team_leads').insert(payload).select('id,lead_data,created_at');
-  if(error)throw error;
-  (data||[]).forEach(row=>db.customers.push({...row.lead_data,id:row.id,_assignedTo:user.id,assignedTo:user.id}));
-  const savedPhones=new Set((data||[]).map(x=>String(x.lead_data?.phone||'')));
-  waCaptureResults=waCaptureResults.map(x=>({...x,duplicate:x.duplicate||savedPhones.has(x.phone)}));
+  const saved=[];
+  for(let i=0;i<payload.length;i+=25){
+   const batch=payload.slice(i,i+25);
+   const {data,error}=await sb.from('team_leads').insert(batch).select('id,lead_data,created_at');
+   if(error)throw error;
+   saved.push(...(data||[]));
+  }
+  saved.forEach(row=>db.customers.push({...row.lead_data,id:row.id,_assignedTo:user.id,assignedTo:user.id}));
+  const savedPhones=new Set(saved.map(x=>normalizeIndianPhone(x.lead_data?.phone)));
+  waCaptureResults=waCaptureResults.map(x=>({...x,duplicate:x.duplicate||savedPhones.has(normalizeIndianPhone(x.phone))}));
   setStatus('Cloud synced');
   render();renderWaCaptureResults();
-  alert((data||[]).length+' WhatsApp leads saved successfully.');
- }catch(err){alert('Lead save failed: '+err.message)}
- finally{saveBusy=false}
+  alert(saved.length+' WhatsApp Lead(s) सफलतापूर्वक सेव हुए।'+(invalid?' '+invalid+' invalid number(s) छोड़े गए।':''));
+ }catch(err){
+  alert('Lead save failed: '+(err?.message||String(err)));
+ }finally{
+  saveBusy=false;
+  const btn=$('waSaveLeads');if(btn){btn.disabled=false;btn.textContent='Save Selected Leads'}
+ }
 }
 
 function openLeadDetails(id){
