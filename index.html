@@ -820,7 +820,7 @@ function manualAttendanceForm(id){
  $('modal').innerHTML='<div class="modalback" id="modalBack"><div class="modal"><h2>'+(id?'Edit Attendance':'Record Attendance')+'</h2><form id="attendanceForm"><div class="grid"><div class="field"><label>Employee</label><input name="employee" required value="'+escapeHTML(old.employee||getEmployeeName())+'"></div><div class="field"><label>Date</label><input type="date" name="date" required value="'+escapeHTML(old.date||now.date)+'"></div><div class="field"><label>Entry / Check-in time</label><input type="time" name="checkIn" value="'+escapeHTML(old.checkIn||now.time)+'"></div><div class="field"><label>Exit / Check-out time</label><input type="time" name="checkOut" value="'+escapeHTML(old.checkOut||'')+'"></div><div class="field"><label>Office / Meeting / Site</label><input name="site" placeholder="Office, client meeting, site visit" value="'+escapeHTML(old.site||'')+'" required></div><div class="field"><label>Location / GPS coordinates</label><input id="attendanceLocation" name="location" placeholder="Enter location or capture GPS" value="'+escapeHTML(old.location||'')+'"></div><div class="field"><label>Status</label><select name="status"><option '+((old.status||'Present')==='Present'?'selected':'')+'>Present</option><option '+(old.status==='Late'?'selected':'')+'>Late</option><option '+(old.status==='Meeting'?'selected':'')+'>Meeting</option><option '+(old.status==='Site Visit'?'selected':'')+'>Site Visit</option><option '+(old.status==='Absent'?'selected':'')+'>Absent</option></select></div></div><p class="muted" id="attendanceLocationMsg">GPS only runs when you press Capture GPS and grant permission.</p><div class="actions"><button type="button" class="secondary" id="captureAttendanceGps">⌖ Capture GPS</button><button type="submit">Save Attendance</button><button type="button" class="secondary" id="cancelAttendance">Cancel</button></div></form></div></div>';
  $('cancelAttendance').onclick=()=>$('modal').innerHTML='';
  $('modalBack').onclick=e=>{if(e.target===$('modalBack'))$('modal').innerHTML=''};
- $('captureAttendanceGps').onclick=()=>captureAttendanceLocation(loc=>{const m=$('attendanceLocationMsg');if(loc.ok){$('attendanceLocation').value=loc.value;if(m)m.textContent='GPS captured: '+loc.value}else if(m)m.textContent=loc.message});
+ $('captureAttendanceGps').onclick=()=>captureAttendanceLocation(loc=>{const m=$('attendanceLocationMsg');if(loc.ok){const field=$('attendanceLocation');if(field)field.value=loc.value;if(m)m.textContent='GPS captured: '+loc.value}else if(m)m.textContent=loc.message});
  $('attendanceForm').onsubmit=async e=>{
   e.preventDefault();const v=Object.fromEntries(new FormData(e.target).entries());
   if(v.checkOut&&v.checkIn&&v.checkOut<v.checkIn&&!confirm('Exit time entry time से पहले है। फिर भी save करें?'))return;
@@ -1147,7 +1147,7 @@ async function processWhatsAppScreenshots(files){
 }
 async function saveWhatsAppExtractedLeads(){
  const selected=[...document.querySelectorAll('[data-wa-save]:checked')].map(el=>Number(el.dataset.waSave));
- const rows=selected.map(i=>({i,name:$('[data-wa-name="'+i+'"]').value.trim(),phone:$('[data-wa-phone="'+i+'"]').value.replace(/\D/g,'')})).filter(x=>/^[6-9]\d{9}$/.test(x.phone));
+ const rows=selected.map(i=>({i,name:(('[data-wa-name="'+i+'"]')&&$('[data-wa-name="'+i+'"]')?.value||'').trim(),phone:(('[data-wa-phone="'+i+'"]')&&$('[data-wa-phone="'+i+'"]')?.value||'').replace(/\D/g,'')})).filter(x=>/^[6-9]\d{9}$/.test(x.phone));
  if(!rows.length){alert('कम से कम एक सही 10-digit mobile number चुनें।');return}
  const unique=rows.filter((x,i)=>rows.findIndex(y=>y.phone===x.phone)===i&&!db.customers.some(y=>String(y.phone||'').replace(/\D/g,'').slice(-10)===x.phone));
  if(!unique.length){alert('चुने गए सभी नंबर पहले से मौजूद हैं।');return}
@@ -1402,7 +1402,7 @@ setInterval(checkFollowupNotifications,15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkFollowupNotifications()});
 
 
-init().catch(e=>{setStatus('Startup error');message(e.message,true)}).finally(()=>setTimeout(()=>$('splash')?.classList.add('hide'),1800));
+init().catch(e=>{setStatus('Startup error');message((e&&e.message?e.message:String(e))+(e&&e.stack?' · '+String(e.stack).split('\n').slice(1,3).join(' | '):''),true)}).finally(()=>setTimeout(()=>$('splash')?.classList.add('hide'),1800));
 </script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker.js').catch(function(err){ console.warn('PWA service worker:', err); }); }); }
