@@ -11,7 +11,7 @@ import android.view.KeyEvent;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String CRM_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/?app=team-work-crm-v1.0.5";
+    private static final String CRM_URL = "https://badalwithproperty-ai.github.io/Best-Property-find/?app=team-work-crm-v1.0.6";
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
