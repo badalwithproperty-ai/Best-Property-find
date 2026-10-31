@@ -398,7 +398,7 @@ let db={customers:[],inventory:[],associates:[],activities:[]};
 let workspaceExtras={};
 
 const $=id=>document.getElementById(id);
-const STATUSES=['New','Contacted','Interested','Follow-up','Converted','Lost'];
+const STATUSES=['New','Contacted','Interested','Follow-up','Not Interested','Converted','Lost'];
 
 function escapeHTML(value){
  return String(value??'').replace(/[&<>"']/g,c=>({
@@ -1057,10 +1057,18 @@ if(page==='followups'){
  if(page==='customers'){
   const q=(window.leadSearchQuery||'').toLowerCase();
   const filter=window.leadStatusFilter||'All';
-  const leads=db.customers.filter(x=>(!q||[x.name,x.phone,x.location,x.requirement,x.associate].join(' ').toLowerCase().includes(q))&&(filter==='All'||normStatus(x.status)===filter));
+  const nextSunday=()=>{const d=new Date();d.setHours(0,0,0,0);const day=d.getDay();d.setDate(d.getDate()+((7-day)%7||7));return d.toISOString().slice(0,10)};
+  const nextWeekRange=()=>{const d=new Date();d.setHours(0,0,0,0);const day=d.getDay();d.setDate(d.getDate()+(8-day));const start=d.toISOString().slice(0,10);d.setDate(d.getDate()+6);return [start,d.toISOString().slice(0,10)]};
+  const weekRange=nextWeekRange();
+  const leads=db.customers.filter(x=>{
+   const matchesSearch=!q||[x.name,x.phone,x.location,x.requirement,x.associate].join(' ').toLowerCase().includes(q);
+   const status=normStatus(x.status),followDate=String(x.followUpDate||'').slice(0,10);
+   const matchesFilter=filter==='All'||(filter==='Sunday'?followDate===nextSunday():filter==='Next Week'?(followDate>=weekRange[0]&&followDate<=weekRange[1]):status===filter);
+   return matchesSearch&&matchesFilter;
+  });
   const converted=db.customers.filter(x=>normStatus(x.status)==='Converted').length;
   c.innerHTML='<div class="pagehead"><div><div class="section-kicker">CUSTOMER RELATIONSHIP</div><h2>Leads & Customers</h2><p class="muted">Manage enquiries, lead details and next follow-ups.</p></div><button type="button" id="addLeadBtn">＋ Add Lead</button></div>'+'<section class="panel" style="margin-bottom:14px"><div class="section-kicker">WHATSAPP LEAD CAPTURE</div><h3>Upload up to 100 screenshots at once</h3><p class="muted">Screenshot से mobile number और उपलब्ध नाम OCR द्वारा पढ़ें। Save करने से पहले जाँच और सुधार कर सकते हैं। OCR आपके browser में चलता है; नाम की पहचान screenshot के layout पर निर्भर करेगी।</p><input id="waScreenshots" type="file" accept="image/*" multiple><button type="button" id="waProcessBtn" style="margin-top:10px">Scan Screenshots</button><p id="waCaptureProgress" class="muted">No screenshots selected.</p><div id="waCaptureResults"></div></section>'+'<div class="stats">'+[['All Leads',db.customers.length],['New',db.customers.filter(x=>normStatus(x.status)==='New').length],['Follow Up',db.customers.filter(x=>normStatus(x.status)==='Follow-up').length],['Converted',converted]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('')+'</div>'+
-  '<div class="panel"><input id="leadSearchInput" placeholder="⌕ Search name, phone or location" value="'+escapeHTML(q)+'"><div class="lead-filter-row">'+['All','New','Contacted','Interested','Follow-up','Converted'].map(x=>'<button class="small '+(filter===x?'':'secondary')+'" onclick="window.leadStatusFilter='+JSON.stringify(x)+';render()">'+x+'</button>').join('')+'</div></div>'+
+  '<div class="panel"><input id="leadSearchInput" placeholder="⌕ Search name, phone or location" value="'+escapeHTML(q)+'"><div class="lead-filter-row">'+['All','New','Contacted','Interested','Follow-up','Not Interested','Converted','Sunday','Next Week'].map(x=>'<button class="small '+(filter===x?'':'secondary')+'" onclick="window.leadStatusFilter='+JSON.stringify(x)+';render()">'+x+'</button>').join('')+'</div></div>'+
   (leads.length?'<div class="lead-list">'+leads.map(x=>'<button class="lead-card" onclick="openLeadDetails('+JSON.stringify(String(x.id||''))+')"><div class="lead-avatar">'+escapeHTML((x.name||'?').trim().slice(0,1).toUpperCase())+'</div><div class="lead-card-main"><strong>'+escapeHTML(x.name||'Unnamed Lead')+'</strong><small>'+escapeHTML(x.phone||'No phone')+'</small><small>'+escapeHTML(x.location||x.requirement||'Property enquiry')+'</small><span class="badge">'+escapeHTML(normStatus(x.status))+'</span></div><div class="lead-card-side"><small>'+escapeHTML(x.followUpDate||'No follow-up')+'</small><span>›</span></div></button>').join('')+'</div>':'<div class="panel"><h3>No leads found</h3><p class="muted">Add a new lead or change the search filter.</p><button type="button" id="addFirstLeadBtn">Add first lead</button></div>');
   const waInput=$('waScreenshots');if(waInput)waInput.onchange=()=>{const n=waInput.files.length;$('waCaptureProgress').textContent=n>100?'Maximum 100 screenshots allowed.':n+' screenshot(s) selected.'};const waBtn=$('waProcessBtn');if(waBtn)waBtn.onclick=()=>{if(waInput.files.length>100){alert('एक बार में अधिकतम 100 screenshots चुनें।');return}processWhatsAppScreenshots(waInput.files)};
   const addLead=$('addLeadBtn');if(addLead)addLead.addEventListener('click',()=>editRecord('customers'));
@@ -1144,15 +1152,19 @@ async function saveWhatsAppExtractedLeads(){
  if(!unique.length){alert('चुने गए सभी नंबर पहले से मौजूद हैं।');return}
  const now=new Date().toISOString();
  const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name,phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from WhatsApp screenshot'},updated_at:now}));
+ saveBusy=true;
  try{
+  if(!user||!sb)throw new Error('Login session उपलब्ध नहीं है। कृपया दोबारा Login करें।');
   const {data,error}=await sb.from('team_leads').insert(payload).select('id,lead_data,created_at');
   if(error)throw error;
   (data||[]).forEach(row=>db.customers.push({...row.lead_data,id:row.id,_assignedTo:user.id,assignedTo:user.id}));
   const savedPhones=new Set((data||[]).map(x=>String(x.lead_data?.phone||'')));
   waCaptureResults=waCaptureResults.map(x=>({...x,duplicate:x.duplicate||savedPhones.has(x.phone)}));
+  setStatus('Cloud synced');
   render();renderWaCaptureResults();
   alert((data||[]).length+' WhatsApp leads saved successfully.');
  }catch(err){alert('Lead save failed: '+err.message)}
+ finally{saveBusy=false}
 }
 
 function openLeadDetails(id){
