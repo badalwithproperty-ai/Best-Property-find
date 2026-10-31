@@ -555,7 +555,7 @@ function message(text,isError=false){
 }
 function hideMessage(){$('msg').classList.add('hidden')}
 function setStatus(text){$('status').textContent=text}
-function withTimeout(promise,label='Supabase request',ms=12000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check internet and Supabase status.')),ms))])}
+function withTimeout(promise,label='Supabase request',ms=12000){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Supabase से response नहीं मिला; internet बदलकर Retry करें.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value)},error=>{clearTimeout(timer);reject(error)});});}
 function ensureSupabaseLibrary(){
  if(window.supabase)return Promise.resolve();
  return new Promise((resolve,reject)=>{
@@ -813,7 +813,7 @@ async function load(authUser){
   // Full hierarchy data filtering must be enabled before referral members are allowed into shared CRM records.
   const {data:referralProfile,error:referralProfileError}=await withTimeout(
    sb.from('member_profiles').select('user_id,workspace_owner_id,approval_status,referral_id,designation,sponsor_user_id').eq('user_id',authUser.id).maybeSingle(),
-   'Referral account check'
+   'Referral account check',25000
   );
   if(referralProfileError&&referralProfileError.code!=='42P01')throw referralProfileError;
   if(referralProfile){
