@@ -420,6 +420,14 @@ body.more-open #app>.workspace-header,body.more-open #content,body.more-open #tw
 .drawer-links button.crm-menu-active{background:#e8f3eb!important;color:#075638!important}
 @media(max-width:380px){#auth{padding-left:16px;padding-right:16px}.login-logo{width:112px;height:112px}}
 
+
+body.referral-register #referralForm{display:block!important}
+body.referral-register #legacyLogin{display:none!important}
+#content .stat{position:relative}
+#content .stat-icon{position:absolute;right:12px;top:30px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:21px;font-weight:800;background:#e7f3fb;color:#1684c5}
+#content .stat-icon-follow{background:#fff0df;color:#e28a20}
+#content .stat-icon-visit{background:#e4f5e9;color:#13854b}
+#content .stat-icon-converted{background:#f0e8fb;color:#8752c6}
 </style>
 </head>
 <body>
@@ -479,7 +487,7 @@ body.more-open #app>.workspace-header,body.more-open #content,body.more-open #tw
 <main id="app" class="wrap hidden">
   <h1 id="welcome">TEAM WORK · My Workspace</h1>
   <div class="pagehead workspace-header"><div><div class="section-kicker">TEAM WORK CRM</div><p class="muted" id="workspacePageLabel">Your workspace</p></div><span class="workspace-online"><i></i> Workspace</span></div>
-  <div id="menuPanel" class="menu-overlay hidden crm-drawer" aria-label="Main menu" onclick="if(event.target===this)toggleMenu(false)"><div class="drawer-sheet"><div class="drawer-brand"><img src="./assets/team-work-mark.svg" alt="Team Work CRM"><div><strong>Team Work</strong><span>CRM</span><small>TOGETHER WE GROW</small></div><button type="button" class="drawer-close" id="closeMoreBtn" aria-label="Close menu">×</button></div><div class="drawer-user"><div class="drawer-avatar">♟</div><div><strong id="drawerUserName">Team Member</strong><small id="drawerUserEmail">team@crm.com</small></div></div><nav class="drawer-links"><button type="button" data-more-page="dashboard"><span>⌂</span>Dashboard</button><button type="button" data-more-page="customers"><span>♟</span>Leads</button><button type="button" data-more-page="followups"><span>◷</span>Follow Up</button><button type="button" data-more-page="activities"><span>♧</span>Site Visit</button><button type="button" data-more-page="reports"><span>▥</span>Reports</button><button type="button" data-more-page="team"><span>♣</span>Team</button><button type="button" data-more-page="settings"><span>⚙</span>Settings</button><button type="button" data-more-page="inventory"><span>▦</span>Inventory</button></nav><button type="button" class="drawer-logout" onclick="logout()"><span>⇥</span>Logout</button></div></div>
+  <div id="menuPanel" class="menu-overlay hidden crm-drawer" aria-label="Main menu" onclick="if(event.target===this)toggleMenu(false)"><div class="drawer-sheet"><div class="drawer-brand"><img src="./assets/team-work-mark.svg" alt="Team Work CRM"><div><strong>Team Work</strong><span>CRM</span><small>TOGETHER WE GROW</small></div><button type="button" class="drawer-close" id="closeMoreBtn" aria-label="Close menu">×</button></div><div class="drawer-user"><div class="drawer-avatar">♟</div><div><strong id="drawerUserName">Team Member</strong><small id="drawerUserEmail">team@crm.com</small></div></div><nav class="drawer-links"><button type="button" data-more-page="dashboard"><span>⌂</span>Dashboard</button><button type="button" data-more-page="customers"><span>♟</span>Leads</button><button type="button" data-more-page="followups"><span>◷</span>Follow Up</button><button type="button" data-more-page="activities"><span>♧</span>Site Visit</button><button type="button" data-more-page="reports"><span>▥</span>Reports</button><button type="button" data-more-page="team"><span>♣</span>Team</button><button type="button" data-more-page="settings"><span>⚙</span>Settings</button></nav><button type="button" class="drawer-logout" onclick="logout()"><span>⇥</span>Logout</button></div></div>
   <div id="content"></div>
 </main>
 <nav class="tw-bottom-nav" id="twBottomNav" aria-label="Main navigation">
@@ -556,6 +564,7 @@ function referralMessage(text,isError=false){
 }
 function setReferralMode(next){
  referralMode=next;
+ document.body.classList.toggle('referral-register',new URLSearchParams(location.search).has('join')&&next==='register');
  $('referralForm').classList.remove('hidden');
  $('legacyLogin').classList.add('hidden');
  $('legacyLogin').style.display='';
@@ -881,9 +890,11 @@ function renderLeadSourceChart(){
 }
 
 function statCards(items){
- return '<div class="stats">'+items.map(x=>
- '<div class="stat"><small>'+escapeHTML(x[0])+'</small><strong>'+escapeHTML(x[1])+'</strong></div>'
- ).join('')+'</div>';
+ const icons={'Total Leads':['♟','leads'],'Follow Up':['◷','follow'],'Site Visit':['●','visit'],'Converted':['✓','converted']};
+ return '<div class="stats">'+items.map(x=>{
+  const icon=icons[x[0]];
+  return '<div class="stat"><small>'+escapeHTML(x[0])+'</small><strong>'+escapeHTML(x[1])+'</strong>'+(icon?'<span class="stat-icon stat-icon-'+icon[1]+'">'+icon[0]+'</span>':'')+'</div>';
+ }).join('')+'</div>';
 }
 function statusOptions(selected){
  return STATUSES.map(s=>'<option value="'+s+'" '+(s===selected?'selected':'')+'>'+s+'</option>').join('');
