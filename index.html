@@ -1092,7 +1092,7 @@ let waCaptureFiles=[],waCaptureResults=[];
 function renderWaCaptureResults(){
  const box=$('waCaptureResults');if(!box)return;
  if(!waCaptureResults.length){box.innerHTML='';return}
- box.innerHTML='<div class="panel" style="margin-top:12px"><div class="pagehead"><div><h3>Extracted WhatsApp Leads · '+waCaptureResults.length+'</h3><p class="muted">नाम और नंबर जाँच लें। Duplicate नंबर सेव नहीं होंगे।</p></div><button type="button" class="secondary" id="waClearResults">Clear</button></div><div class="tablewrap"><table><thead><tr><th>Save</th><th>Name</th><th>Mobile Number</th><th>Screenshot</th><th>Match</th></tr></thead><tbody>'+waCaptureResults.map((x,i)=>'<tr><td><input type="checkbox" data-wa-save="'+i+'" '+(!x.duplicate?'checked':'')+' '+(x.duplicate?'disabled':'')+'></td><td><input data-wa-name="'+i+'" value="'+escapeHTML(x.name)+'" placeholder="Name (optional)"></td><td><input data-wa-phone="'+i+'" value="'+escapeHTML(x.phone)+'" inputmode="tel"></td><td>'+escapeHTML(x.fileName)+'</td><td>'+(x.duplicate?'Duplicate':'New')+'</td></tr>').join('')+'</tbody></table></div><button type="button" id="waSaveLeads" style="margin-top:12px">Save Selected Leads</button></div>';
+ box.innerHTML='<div class="panel" style="margin-top:12px"><div class="pagehead"><div><h3>Extracted WhatsApp Leads · '+waCaptureResults.length+'</h3><p class="muted">सिर्फ नाम और मोबाइल नंबर दिखेंगे। Duplicate नंबर सेव नहीं होंगे।</p></div><button type="button" class="secondary" id="waClearResults">Clear</button></div><div class="tablewrap"><table><thead><tr><th>Save</th><th>Name</th><th>Mobile Number</th></tr></thead><tbody>'+waCaptureResults.map((x,i)=>'<tr><td><input type="checkbox" data-wa-save="'+i+'" '+(!x.duplicate?'checked':'')+' '+(x.duplicate?'disabled':'')+'></td><td><input data-wa-name="'+i+'" value="'+escapeHTML(x.name)+'" placeholder="Name (optional)"></td><td><input data-wa-phone="'+i+'" value="'+escapeHTML(x.phone)+'" inputmode="tel"></td></tr>').join('')+'</tbody></table></div><button type="button" id="waSaveLeads" style="margin-top:12px">Save Selected Leads</button></div>';
  $('waClearResults').onclick=()=>{waCaptureResults=[];renderWaCaptureResults()};
  $('waSaveLeads').onclick=saveWhatsAppExtractedLeads;
 }
@@ -1101,7 +1101,7 @@ function extractWhatsAppFields(text){
  const phoneMatches=[...String(text||'').matchAll(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g)].map(m=>m[0].replace(/\D/g,'').replace(/^91(?=\d{10}$)/,'')).filter(x=>/^[6-9]\d{9}$/.test(x));
  const phone=[...new Set(phoneMatches)][0]||'';
  const clean=lines.map(x=>x.replace(/^\[?\d{1,2}[/:.-]\d{1,2}[/:.-]\d{2,4},?\s*\d{1,2}:\d{2}(?:\s*[ap]m)?\]?\s*/i,'').trim());
- const nameLine=clean.find(x=>x.length>=2&&x.length<=45&&!/whatsapp|today|yesterday|typing|online|last seen|messages|end-to-end|https?:|\d{5,}/i.test(x)&&!/[6-9]\d{9}/.test(x)&&!/^you:/i.test(x));
+ const nameLine=clean.find(x=>x.length>=2&&x.length<=35&&/[A-Za-z]/.test(x)&&!/[0-9]/.test(x)&&/^[A-Za-z][A-Za-z .'-]*$/.test(x)&&! /whatsapp|today|yesterday|typing|online|last seen|messages|end-to-end|https?:|you:/i.test(x));
  let name=nameLine||'';
  if(name.includes(':'))name=name.split(':')[0].trim();
  if(/^(you|me|customer|unknown)$/i.test(name))name='';
@@ -1143,7 +1143,7 @@ async function saveWhatsAppExtractedLeads(){
  const unique=rows.filter((x,i)=>rows.findIndex(y=>y.phone===x.phone)===i&&!db.customers.some(y=>String(y.phone||'').replace(/\D/g,'').slice(-10)===x.phone));
  if(!unique.length){alert('चुने गए सभी नंबर पहले से मौजूद हैं।');return}
  const now=new Date().toISOString();
- const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name,phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from '+waCaptureResults[x.i].fileName},updated_at:now}));
+ const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name,phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from WhatsApp screenshot'},updated_at:now}));
  try{
   const {data,error}=await sb.from('team_leads').insert(payload).select('id,lead_data,created_at');
   if(error)throw error;
