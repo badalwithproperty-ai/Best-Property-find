@@ -441,6 +441,10 @@ body.referral-register #legacyLogin{display:none!important}
 .dashboard-attendance .actions button{font-size:13px}
 @media(min-width:760px){.dashboard-attendance-meta{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+
+.drawer-links [data-more-page="inventory"]{display:flex!important}
+.drawer-links [data-more-page="inventory"] span{color:#08734c}
+
 </style>
 </head>
 <body>
@@ -500,7 +504,7 @@ body.referral-register #legacyLogin{display:none!important}
 <main id="app" class="wrap hidden">
   <h1 id="welcome">TEAM WORK · My Workspace</h1>
   <div class="pagehead workspace-header"><div><div class="section-kicker">TEAM WORK CRM</div><p class="muted" id="workspacePageLabel">Your workspace</p></div><span class="workspace-online"><i></i> Workspace</span></div>
-  <div id="menuPanel" class="menu-overlay hidden crm-drawer" aria-label="Main menu" onclick="if(event.target===this)toggleMenu(false)"><div class="drawer-sheet"><div class="drawer-brand"><img src="./assets/team-work-mark.svg" alt="Team Work CRM"><div><strong>Team Work</strong><span>CRM</span><small>TOGETHER WE GROW</small></div><button type="button" class="drawer-close" id="closeMoreBtn" aria-label="Close menu">×</button></div><div class="drawer-user"><div class="drawer-avatar">♟</div><div><strong id="drawerUserName">Team Member</strong><small id="drawerUserEmail">team@crm.com</small></div></div><nav class="drawer-links"><button type="button" data-more-page="dashboard"><span>⌂</span>Dashboard</button><button type="button" data-more-page="customers"><span>♟</span>Leads</button><button type="button" data-more-page="followups"><span>◷</span>Follow Up</button><button type="button" data-more-page="activities"><span>♧</span>Site Visit</button><button type="button" data-more-page="reports"><span>▥</span>Reports</button><button type="button" data-more-page="team"><span>♣</span>Team</button><button type="button" data-more-page="settings"><span>⚙</span>Settings</button></nav><button type="button" class="drawer-logout" onclick="logout()"><span>⇥</span>Logout</button></div></div>
+  <div id="menuPanel" class="menu-overlay hidden crm-drawer" aria-label="Main menu" onclick="if(event.target===this)toggleMenu(false)"><div class="drawer-sheet"><div class="drawer-brand"><img src="./assets/team-work-mark.svg" alt="Team Work CRM"><div><strong>Team Work</strong><span>CRM</span><small>TOGETHER WE GROW</small></div><button type="button" class="drawer-close" id="closeMoreBtn" aria-label="Close menu">×</button></div><div class="drawer-user"><div class="drawer-avatar">♟</div><div><strong id="drawerUserName">Team Member</strong><small id="drawerUserEmail">team@crm.com</small></div></div><nav class="drawer-links"><button type="button" data-more-page="dashboard"><span>⌂</span>Dashboard</button><button type="button" data-more-page="customers"><span>♟</span>Leads</button><button type="button" data-more-page="inventory"><span>▦</span>Inventory</button><button type="button" data-more-page="followups"><span>◷</span>Follow Up</button><button type="button" data-more-page="activities"><span>♧</span>Site Visit</button><button type="button" data-more-page="reports"><span>▥</span>Reports</button><button type="button" data-more-page="team"><span>♣</span>Team</button><button type="button" data-more-page="settings"><span>⚙</span>Settings</button></nav><button type="button" class="drawer-logout" onclick="logout()"><span>⇥</span>Logout</button></div></div>
   <div id="content"></div>
 </main>
 <nav class="tw-bottom-nav" id="twBottomNav" aria-label="Main navigation">
@@ -562,7 +566,41 @@ function ensureSupabaseLibrary(){
   document.head.appendChild(script);
  });
 }
-function goPage(p){if(!RESTORABLE_PAGES.includes(p)&&p!=='more')p='dashboard';page=p;try{localStorage.setItem('twcrm_last_page',p)}catch(_){}document.querySelectorAll('.drawer-links [data-more-page]').forEach(b=>b.classList.toggle('crm-menu-active',b.dataset.morePage===p));toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
+
+/* In-app Android/browser Back navigation: move through CRM screens instead of leaving the app. */
+window.__twcrmHistoryReady=false;
+window.__twcrmHandlingPop=false;
+function ensureTwcrmHistory(){
+ if(window.__twcrmHistoryReady)return;
+ try{history.pushState({twcrmApp:true,twcrmPage:page},'',location.href);window.__twcrmHistoryReady=true}catch(e){console.warn('CRM navigation history unavailable',e)}
+}
+window.addEventListener('popstate',function(event){
+ if(!$('app')||$('app').classList.contains('hidden'))return;
+ window.__twcrmHandlingPop=true;
+ const modal=$('modal');
+ const menu=$('menuPanel');
+ if(modal&&modal.innerHTML.trim()){
+  modal.innerHTML='';
+  history.pushState({twcrmApp:true,twcrmPage:page},'',location.href);
+ }else if(menu&&!menu.classList.contains('hidden')){
+  toggleMenu(false);
+  history.pushState({twcrmApp:true,twcrmPage:page},'',location.href);
+ }else if(event.state&&event.state.twcrmApp&&RESTORABLE_PAGES.includes(event.state.twcrmPage)){
+  page=event.state.twcrmPage;
+  try{localStorage.setItem('twcrm_last_page',page)}catch(_){}
+  document.querySelectorAll('.drawer-links [data-more-page]').forEach(b=>b.classList.toggle('crm-menu-active',b.dataset.morePage===page));
+  render();setBottomNav(page);
+  const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About',admin:'Admin Console'};
+  const label=$('workspacePageLabel');if(label)label.textContent=names[page]||'Workspace';
+  window.scrollTo({top:0,behavior:'instant'});
+ }else{
+  /* Re-arm the app entry so Android Back cannot minimize the CRM at its first screen. */
+  history.pushState({twcrmApp:true,twcrmPage:page},'',location.href);
+ }
+ window.__twcrmHandlingPop=false;
+});
+
+function goPage(p){if(!RESTORABLE_PAGES.includes(p)&&p!=='more')p='dashboard';const previous=page;page=p;if(p!==previous&&window.__twcrmHistoryReady&&!window.__twcrmHandlingPop){try{history.pushState({twcrmApp:true,twcrmPage:p},'',location.href)}catch(_){}}try{localStorage.setItem('twcrm_last_page',p)}catch(_){}document.querySelectorAll('.drawer-links [data-more-page]').forEach(b=>b.classList.toggle('crm-menu-active',b.dataset.morePage===p));toggleMenu(false);const names={dashboard:'Home',customers:'Leads',tasks:'Tasks',reports:'Reports',inventory:'Property Inventory',associates:'Associates',activities:'Site Visit',projects:'Projects',calendar:'Calendar',team:'Team',attendance:'Attendance',followups:'Follow-ups',settings:'Settings',profile:'Profile',teamaccess:'Team Access',admin:'Admin Console',notifications:'Notifications',backup:'Backup & Data',security:'Settings & Security',contact:'Support',about:'About'};const label=$('workspacePageLabel');if(label)label.textContent=names[p]||'Workspace';render();setBottomNav(p);window.scrollTo({top:0,behavior:'instant'})}
 function toggleMenu(force){const panel=$('menuPanel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);document.body.classList.toggle('more-open',open);const b=document.querySelector('#twBottomNav [data-page="more"]');if(b)b.setAttribute('aria-expanded',String(open));if(open)window.scrollTo({top:0,behavior:'instant'})}
 document.addEventListener('click',function(e){const tile=e.target.closest('[data-more-page]');if(tile){if(tile.dataset.morePage==='admin'&&!isWorkspaceOwner){toggleMenu(false);return}goPage(tile.dataset.morePage)}if(e.target.closest('#closeMoreBtn'))toggleMenu(false)});
 function today(){return new Date().toISOString().slice(0,10)}
@@ -855,7 +893,7 @@ async function load(authUser){
   db={customers:secureCustomers,inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
-  setStatus('Cloud connected');if(!RESTORABLE_PAGES.includes(page)||(page==='admin'&&!isWorkspaceOwner))page='dashboard';setupWorkspaceRealtime();render();setBottomNav(page);maybeAutoCheckIn();
+  setStatus('Cloud connected');if(!RESTORABLE_PAGES.includes(page)||(page==='admin'&&!isWorkspaceOwner))page='dashboard';ensureTwcrmHistory();setupWorkspaceRealtime();render();setBottomNav(page);maybeAutoCheckIn();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
@@ -1093,7 +1131,7 @@ function render(){
   c.innerHTML='<section class="crm-greeting"><div><small id="dashboardGreeting">'+getTimeGreeting()+'</small><h2>'+escapeHTML(name)+'</h2><p>Keep going, you’re doing great!</p></div><div class="crm-greeting-avatar">'+(avatar?'<img src="'+escapeHTML(avatar)+'" alt="Profile photo" onerror="this.style.display=\'none\';this.parentNode.textContent=\'♟\'">':'♟')+'</div></section>'+
   '<div class="section-kicker dashboard-overview-label">SALES OVERVIEW</div>'+statCards([['Total Leads',db.customers.length],['Follow Up',followups],['Site Visit',visits],['Converted',converted]])+
   '<div class="section-kicker dashboard-quick-label">Quick Actions</div><div class="tw-quick-actions crm-quick-actions">'+
-  quick('＋','Add Lead','New enquiry',"editRecord('customers')")+quick('♟','My Leads','View customers',"goPage('customers')")+quick('◷','Follow Up','Reminders',"goPage('followups')")+quick('▥','Reports','Sales results',"goPage('reports')")+quick('♣','Team','Team overview',"goPage('team')")+quick('⚙','Settings','App settings',"goPage('settings')")+
+  quick('＋','Add Lead','New enquiry',"editRecord('customers')")+quick('♟','My Leads','View customers',"goPage('customers')")+quick('▦','Inventory','Plots & availability',"goPage('inventory')")+quick('◷','Follow Up','Reminders',"goPage('followups')")+quick('▥','Reports','Sales results',"goPage('reports')")+quick('♣','Team','Team overview',"goPage('team')")+quick('⚙','Settings','App settings',"goPage('settings')")+
   '</div>'+dashboardAttendanceCard();
   const drawerName=$('drawerUserName'),drawerEmail=$('drawerUserEmail');if(drawerName)drawerName.textContent=name;if(drawerEmail)drawerEmail.textContent=user?.email||user?.phone||'Team Work CRM';
   return;
