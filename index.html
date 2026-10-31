@@ -1149,7 +1149,7 @@ async function saveWhatsAppExtractedLeads(){
   (data||[]).forEach(row=>db.customers.push({...row.lead_data,id:row.id,_assignedTo:user.id,assignedTo:user.id}));
   const savedPhones=new Set((data||[]).map(x=>String(x.lead_data?.phone||'')));
   waCaptureResults=waCaptureResults.map(x=>({...x,duplicate:x.duplicate||savedPhones.has(x.phone)}));
-  renderWaCaptureResults();render();
+  render();renderWaCaptureResults();
   alert((data||[]).length+' WhatsApp leads saved successfully.');
  }catch(err){alert('Lead save failed: '+err.message)}
 }
