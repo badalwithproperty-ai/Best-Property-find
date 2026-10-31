@@ -1057,10 +1057,11 @@ if(page==='followups'){
   const filter=window.leadStatusFilter||'All';
   const leads=db.customers.filter(x=>(!q||[x.name,x.phone,x.location,x.requirement,x.associate].join(' ').toLowerCase().includes(q))&&(filter==='All'||normStatus(x.status)===filter));
   const converted=db.customers.filter(x=>normStatus(x.status)==='Converted').length;
-  c.innerHTML='<div class="pagehead"><div><div class="section-kicker">CUSTOMER RELATIONSHIP</div><h2>Leads & Customers</h2><p class="muted">Manage enquiries, lead details and next follow-ups.</p></div><button type="button" id="addLeadBtn">＋ Add Lead</button></div>'+
+  c.innerHTML='<div class="pagehead"><div><div class="section-kicker">CUSTOMER RELATIONSHIP</div><h2>Leads & Customers</h2><p class="muted">Manage enquiries, lead details and next follow-ups.</p></div><button type="button" id="addLeadBtn">＋ Add Lead</button></div>'+'<section class="panel" style="margin-bottom:14px"><div class="section-kicker">WHATSAPP LEAD CAPTURE</div><h3>Upload up to 100 screenshots at once</h3><p class="muted">Screenshot से mobile number और उपलब्ध नाम OCR द्वारा पढ़ें। Save करने से पहले जाँच और सुधार कर सकते हैं। OCR आपके browser में चलता है; नाम की पहचान screenshot के layout पर निर्भर करेगी।</p><input id="waScreenshots" type="file" accept="image/*" multiple><button type="button" id="waProcessBtn" style="margin-top:10px">Scan Screenshots</button><p id="waCaptureProgress" class="muted">No screenshots selected.</p><div id="waCaptureResults"></div></section>'+'
   '<div class="stats">'+[['All Leads',db.customers.length],['New',db.customers.filter(x=>normStatus(x.status)==='New').length],['Follow Up',db.customers.filter(x=>normStatus(x.status)==='Follow-up').length],['Converted',converted]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('')+'</div>'+
   '<div class="panel"><input id="leadSearchInput" placeholder="⌕ Search name, phone or location" value="'+escapeHTML(q)+'"><div class="lead-filter-row">'+['All','New','Contacted','Interested','Follow-up','Converted'].map(x=>'<button class="small '+(filter===x?'':'secondary')+'" onclick="window.leadStatusFilter='+JSON.stringify(x)+';render()">'+x+'</button>').join('')+'</div></div>'+
   (leads.length?'<div class="lead-list">'+leads.map(x=>'<button class="lead-card" onclick="openLeadDetails('+JSON.stringify(String(x.id||''))+')"><div class="lead-avatar">'+escapeHTML((x.name||'?').trim().slice(0,1).toUpperCase())+'</div><div class="lead-card-main"><strong>'+escapeHTML(x.name||'Unnamed Lead')+'</strong><small>'+escapeHTML(x.phone||'No phone')+'</small><small>'+escapeHTML(x.location||x.requirement||'Property enquiry')+'</small><span class="badge">'+escapeHTML(normStatus(x.status))+'</span></div><div class="lead-card-side"><small>'+escapeHTML(x.followUpDate||'No follow-up')+'</small><span>›</span></div></button>').join('')+'</div>':'<div class="panel"><h3>No leads found</h3><p class="muted">Add a new lead or change the search filter.</p><button type="button" id="addFirstLeadBtn">Add first lead</button></div>');
+  const waInput=$('waScreenshots');if(waInput)waInput.onchange=()=>{const n=waInput.files.length;$('waCaptureProgress').textContent=n>100?'Maximum 100 screenshots allowed.':n+' screenshot(s) selected.'};const waBtn=$('waProcessBtn');if(waBtn)waBtn.onclick=()=>{if(waInput.files.length>100){alert('एक बार में अधिकतम 100 screenshots चुनें।');return}processWhatsAppScreenshots(waInput.files)};
   const addLead=$('addLeadBtn');if(addLead)addLead.addEventListener('click',()=>editRecord('customers'));
   const addFirstLead=$('addFirstLeadBtn');if(addFirstLead)addFirstLead.addEventListener('click',()=>editRecord('customers'));
   const search=$('leadSearchInput');if(search)search.oninput=()=>{window.leadSearchQuery=search.value;const pos=search.selectionStart;render();const next=$('leadSearchInput');if(next){next.focus();next.setSelectionRange(pos,pos)}};
@@ -1083,6 +1084,74 @@ if(page==='followups'){
  '<button class="small danger" onclick="del(\''+page+'\',\''+escapeHTML(x.id)+'\')">Delete</button></td></tr>').join('');
  c.innerHTML='<div class="pagehead"><h2>'+titles[page]+'</h2><button onclick="editRecord(\''+page+'\')">+ Add New</button></div>'+
  tbl(fields.map(f=>f[1]).concat(['Action']),rows);
+}
+
+
+let waCaptureFiles=[],waCaptureResults=[];
+function renderWaCaptureResults(){
+ const box=$('waCaptureResults');if(!box)return;
+ if(!waCaptureResults.length){box.innerHTML='';return}
+ box.innerHTML='<div class="panel" style="margin-top:12px"><div class="pagehead"><div><h3>Extracted WhatsApp Leads · '+waCaptureResults.length+'</h3><p class="muted">नाम और नंबर जाँच लें। Duplicate नंबर सेव नहीं होंगे।</p></div><button type="button" class="secondary" id="waClearResults">Clear</button></div><div class="tablewrap"><table><thead><tr><th>Save</th><th>Name</th><th>Mobile Number</th><th>Screenshot</th><th>Match</th></tr></thead><tbody>'+waCaptureResults.map((x,i)=>'<tr><td><input type="checkbox" data-wa-save="'+i+'" '+(!x.duplicate?'checked':'')+' '+(x.duplicate?'disabled':'')+'></td><td><input data-wa-name="'+i+'" value="'+escapeHTML(x.name)+'" placeholder="Name (optional)"></td><td><input data-wa-phone="'+i+'" value="'+escapeHTML(x.phone)+'" inputmode="tel"></td><td>'+escapeHTML(x.fileName)+'</td><td>'+(x.duplicate?'Duplicate':'New')+'</td></tr>').join('')+'</tbody></table></div><button type="button" id="waSaveLeads" style="margin-top:12px">Save Selected Leads</button></div>';
+ $('waClearResults').onclick=()=>{waCaptureResults=[];renderWaCaptureResults()};
+ $('waSaveLeads').onclick=saveWhatsAppExtractedLeads;
+}
+function extractWhatsAppFields(text){
+ const lines=String(text||'').split(/\r?\n/).map(x=>x.replace(/[|•]/g,' ').trim()).filter(Boolean);
+ const phoneMatches=[...String(text||'').matchAll(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g)].map(m=>m[0].replace(/\D/g,'').replace(/^91(?=\d{10}$)/,'')).filter(x=>/^[6-9]\d{9}$/.test(x));
+ const phone=[...new Set(phoneMatches)][0]||'';
+ const clean=lines.map(x=>x.replace(/^\[?\d{1,2}[/:.-]\d{1,2}[/:.-]\d{2,4},?\s*\d{1,2}:\d{2}(?:\s*[ap]m)?\]?\s*/i,'').trim());
+ const nameLine=clean.find(x=>x.length>=2&&x.length<=45&&!/whatsapp|today|yesterday|typing|online|last seen|messages|end-to-end|https?:|\d{5,}/i.test(x)&&!/[6-9]\d{9}/.test(x)&&!/^you:/i.test(x));
+ let name=nameLine||'';
+ if(name.includes(':'))name=name.split(':')[0].trim();
+ if(/^(you|me|customer|unknown)$/i.test(name))name='';
+ return {name,phone};
+}
+async function loadTesseract(){
+ if(window.Tesseract)return window.Tesseract;
+ await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=resolve;sc.onerror=()=>reject(new Error('OCR library load नहीं हुई। Internet connection जाँचें।'));document.head.appendChild(sc)});
+ return window.Tesseract;
+}
+async function processWhatsAppScreenshots(files){
+ if(!files||!files.length)return;
+ if(files.length>100){alert('एक बार में अधिकतम 100 screenshots चुनें।');return}
+ const valid=Array.from(files).filter(f=>/^image\//.test(f.type));
+ if(!valid.length){alert('कृपया image screenshots चुनें।');return}
+ if(valid.length!==files.length)alert('कुछ non-image files छोड़ दी गई हैं।');
+ const progress=$('waCaptureProgress');progress.textContent='OCR library तैयार हो रही है…';
+ try{
+  const T=await loadTesseract();const worker=await T.createWorker('eng');
+  for(let i=0;i<valid.length;i++){
+   progress.textContent='Reading screenshot '+(i+1)+' / '+valid.length+'…';
+   try{
+    const {data}=await worker.recognize(valid[i]);
+    const parsed=extractWhatsAppFields(data.text);
+    if(parsed.phone){
+     const duplicate=db.customers.some(x=>String(x.phone||'').replace(/\D/g,'').slice(-10)===parsed.phone)||waCaptureResults.some(x=>x.phone===parsed.phone);
+     waCaptureResults.push({...parsed,fileName:valid[i].name,duplicate});
+    }
+   }catch(err){console.warn('OCR failed for',valid[i].name,err)}
+  }
+  await worker.terminate();progress.textContent='Completed: '+valid.length+' screenshots checked · '+waCaptureResults.length+' phone numbers found.';
+  renderWaCaptureResults();
+ }catch(err){progress.textContent='OCR error: '+err.message;alert(err.message)}
+}
+async function saveWhatsAppExtractedLeads(){
+ const selected=[...document.querySelectorAll('[data-wa-save]:checked')].map(el=>Number(el.dataset.waSave));
+ const rows=selected.map(i=>({i,name:$('[data-wa-name="'+i+'"]').value.trim(),phone:$('[data-wa-phone="'+i+'"]').value.replace(/\D/g,'')})).filter(x=>/^[6-9]\d{9}$/.test(x.phone));
+ if(!rows.length){alert('कम से कम एक सही 10-digit mobile number चुनें।');return}
+ const unique=rows.filter((x,i)=>rows.findIndex(y=>y.phone===x.phone)===i&&!db.customers.some(y=>String(y.phone||'').replace(/\D/g,'').slice(-10)===x.phone));
+ if(!unique.length){alert('चुने गए सभी नंबर पहले से मौजूद हैं।');return}
+ const now=new Date().toISOString();
+ const payload=unique.map(x=>({workspace_owner_id:workspaceOwnerId||user.id,assigned_to:user.id,assigned_by:user.id,lead_data:{name:x.name,phone:x.phone,source:'WhatsApp Screenshot',status:'New',notes:'Captured from '+waCaptureResults[x.i].fileName},updated_at:now}));
+ try{
+  const {data,error}=await sb.from('team_leads').insert(payload).select('id,lead_data,created_at');
+  if(error)throw error;
+  (data||[]).forEach(row=>db.customers.push({...row.lead_data,id:row.id,_assignedTo:user.id,assignedTo:user.id}));
+  const savedPhones=new Set((data||[]).map(x=>String(x.lead_data?.phone||'')));
+  waCaptureResults=waCaptureResults.map(x=>({...x,duplicate:x.duplicate||savedPhones.has(x.phone)}));
+  renderWaCaptureResults();render();
+  alert((data||[]).length+' WhatsApp leads saved successfully.');
+ }catch(err){alert('Lead save failed: '+err.message)}
 }
 
 function openLeadDetails(id){
