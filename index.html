@@ -428,6 +428,19 @@ body.referral-register #legacyLogin{display:none!important}
 #content .stat-icon-follow{background:#fff0df;color:#e28a20}
 #content .stat-icon-visit{background:#e4f5e9;color:#13854b}
 #content .stat-icon-converted{background:#f0e8fb;color:#8752c6}
+
+.dashboard-attendance{margin:14px 0 18px;padding:16px!important;border:1px solid #dce8df!important;border-radius:18px!important;background:linear-gradient(135deg,#fff 0%,#f3faf5 100%)!important}
+.dashboard-attendance-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dashboard-attendance-head h3{margin:4px 0;font-size:18px}
+.dashboard-attendance-mark{width:42px;height:42px;border-radius:14px;background:#e2f2e7;color:#08734c;display:grid;place-items:center;font-size:23px;font-weight:800}
+.dashboard-attendance-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.dashboard-attendance-meta span{display:flex;flex-direction:column;gap:3px;padding:10px;border-radius:12px;background:#fff;border:1px solid #e4ece6;min-width:0}
+.dashboard-attendance-meta small{font-size:12px;color:#718078}
+.dashboard-attendance-meta b{font-size:15px;color:#164d38;overflow-wrap:anywhere}
+.dashboard-attendance .actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.dashboard-attendance .actions button{font-size:13px}
+@media(min-width:760px){.dashboard-attendance-meta{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -942,7 +955,7 @@ function enableAttendanceAuto(){
  if(!confirm('Attendance auto check-in चालू करें? आपकी सहमति के बाद ऐप खुलने पर आज की पहली entry का समय और, अनुमति मिलने पर, GPS location रिकॉर्ड होगी। यह ऑफिस में मौजूद होने का प्रमाण अपने-आप नहीं है; Site/Office नाम सही भरें।'))return;
  localStorage.setItem('twcrm_attendance_consent','yes');
  alert('Auto attendance consent enabled. Location permission पूछे जाने पर Allow करें। आज की entry न हो तो अगली बार ऐप खुलने पर auto check-in होगा।');
- renderAttendance($('content'));
+ render();
 }
 function manualAttendanceForm(id){
  const old=id?db.attendance.find(a=>a.id===id)||{}:{};
@@ -1051,6 +1064,16 @@ function getTimeGreeting(){const h=new Date().getHours();if(h>=4&&h<12)return 'G
 function updateDashboardGreeting(){const el=$('dashboardGreeting');if(el)el.textContent=getTimeGreeting();}
 setInterval(updateDashboardGreeting,60000);
 document.addEventListener('visibilitychange',updateDashboardGreeting);
+function dashboardAttendanceCard(){
+ const today=localDateTime().date;
+ const mine=(db.attendance||[]).filter(a=>a.date===today&&(a.userId===user?.id||a.employee===getEmployeeName())).sort((a,b)=>String(b.checkIn||'').localeCompare(String(a.checkIn||'')));
+ const rec=mine[0];
+ const consented=localStorage.getItem('twcrm_attendance_consent')==='yes';
+ const status=rec?(rec.checkOut?'Checked out':'Checked in'):'Not checked in';
+ const detail=rec?'<div class="dashboard-attendance-meta"><span><small>Check-in</small><b>'+escapeHTML(rec.checkIn||'—')+'</b></span><span><small>Check-out</small><b>'+escapeHTML(rec.checkOut||'—')+'</b></span><span><small>Office / Site</small><b>'+escapeHTML(rec.site||'—')+'</b></span><span><small>Status</small><b>'+escapeHTML(rec.status||'Present')+'</b></span></div>':'<p class="muted">आज की Attendance अभी दर्ज नहीं हुई है।</p>';
+ const action=rec&&!rec.checkOut?'<button type="button" class="dashboard-attendance-primary" onclick="finishAttendance('+JSON.stringify(String(rec.id))+')">Check-out</button>':'<button type="button" class="dashboard-attendance-primary" onclick="manualAttendanceForm()">＋ Record Attendance</button>';
+ return '<section class="dashboard-attendance panel"><div class="dashboard-attendance-head"><div><div class="section-kicker">DAILY ATTENDANCE</div><h3>Attendance Today</h3><p class="muted">'+escapeHTML(today)+' · '+escapeHTML(status)+'</p></div><span class="dashboard-attendance-mark">✓</span></div>'+detail+'<div class="actions">'+action+'<button type="button" class="secondary" onclick="goPage(\'attendance\')">View Attendance</button>'+(consented?'<span class="badge">Auto check-in enabled</span>':'<button type="button" class="secondary" onclick="enableAttendanceAuto()">Enable auto check-in</button>')+'</div></section>';
+}
 function render(){
  const c=$('content');if(!c)return;
  const adminTile=document.querySelector('[data-more-page="admin"]');if(adminTile)adminTile.classList.toggle('hidden',!isWorkspaceOwner);
@@ -1071,7 +1094,7 @@ function render(){
   '<div class="section-kicker dashboard-overview-label">SALES OVERVIEW</div>'+statCards([['Total Leads',db.customers.length],['Follow Up',followups],['Site Visit',visits],['Converted',converted]])+
   '<div class="section-kicker dashboard-quick-label">Quick Actions</div><div class="tw-quick-actions crm-quick-actions">'+
   quick('＋','Add Lead','New enquiry',"editRecord('customers')")+quick('♟','My Leads','View customers',"goPage('customers')")+quick('◷','Follow Up','Reminders',"goPage('followups')")+quick('▥','Reports','Sales results',"goPage('reports')")+quick('♣','Team','Team overview',"goPage('team')")+quick('⚙','Settings','App settings',"goPage('settings')")+
-  '</div>';
+  '</div>'+dashboardAttendanceCard();
   const drawerName=$('drawerUserName'),drawerEmail=$('drawerUserEmail');if(drawerName)drawerName.textContent=name;if(drawerEmail)drawerEmail.textContent=user?.email||user?.phone||'Team Work CRM';
   return;
  }
