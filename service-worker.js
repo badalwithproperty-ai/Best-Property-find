@@ -1,4 +1,4 @@
-const CACHE_NAME = 'property-find-shell-v14';
+const CACHE_NAME = 'property-find-shell-v15';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon.svg'];
 self.addEventListener('message', event => { if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('install', event => {
