@@ -68,9 +68,9 @@ jobs:
       - name: Publish TEAM WORK CRM APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: team-work-crm-v1.0.5
-          name: TEAM WORK CRM Android App v1.0.5
-          body: Dedicated TEAM WORK CRM Android app v1.0.5. Opens the main CRM workspace, not the Admin Panel. APK package, DEX, manifest, and launcher icon are validated before publishing.
+          tag_name: team-work-crm-v1.0.6
+          name: TEAM WORK CRM Android App v1.0.6
+          body: Dedicated TEAM WORK CRM Android app v1.0.6. Opens the main CRM workspace, not the Admin Panel. APK package, DEX, manifest, and launcher icon are validated before publishing.
           make_latest: false
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
