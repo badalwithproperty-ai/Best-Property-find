@@ -1651,7 +1651,27 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkFollo
 init().catch(e=>{setStatus('Startup error');message((e&&e.message?e.message:String(e))+(e&&e.stack?' · '+String(e.stack).split('\n').slice(1,3).join(' | '):''),true)}).finally(()=>setTimeout(()=>$('splash')?.classList.add('hide'),1800));
 </script>
 <script>
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker.js').catch(function(err){ console.warn('PWA service worker:', err); }); }); }
+/* Android/PWA: actively check and apply new app versions */
+(function(){
+ if(!('serviceWorker' in navigator) || !(location.protocol==='https:' || location.hostname==='localhost')) return;
+ var refreshing=false;
+ navigator.serviceWorker.addEventListener('controllerchange',function(){
+  if(refreshing)return; refreshing=true; window.location.reload();
+ });
+ window.addEventListener('load',function(){
+  navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(function(reg){
+   reg.update().catch(function(){});
+   if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+   reg.addEventListener('updatefound',function(){
+    var worker=reg.installing;
+    if(!worker)return;
+    worker.addEventListener('statechange',function(){
+     if(worker.state==='installed' && navigator.serviceWorker.controller) worker.postMessage({type:'SKIP_WAITING'});
+    });
+   });
+  }).catch(function(err){console.warn('PWA service worker:',err);});
+ });
+})();
 </script>
 <script>
 function setBottomNav(active){
