@@ -893,7 +893,7 @@ async function load(authUser){
   db={customers:secureCustomers,inventory:Array.isArray(saved.inventory)?saved.inventory:[],associates:Array.isArray(saved.associates)?saved.associates:[],activities:Array.isArray(saved.activities)?saved.activities:[],projects:Array.isArray(saved.projects)?saved.projects:[],tasks:Array.isArray(saved.tasks)?saved.tasks:[],attendance:Array.isArray(saved.attendance)?saved.attendance:[]};
   $('auth').classList.add('hidden');$('app').classList.remove('hidden');$('out').classList.remove('hidden');
   $('welcome').textContent='Workspace · '+(authUser.email||'')+(isWorkspaceOwner?' · Admin':' · Associate');
-  setStatus('Cloud connected');if(!RESTORABLE_PAGES.includes(page)||(page==='admin'&&!isWorkspaceOwner))page='dashboard';ensureTwcrmHistory();setupWorkspaceRealtime();render();setBottomNav(page);maybeAutoCheckIn();
+  setStatus('Cloud connected');page='dashboard';try{localStorage.setItem('twcrm_last_page','dashboard')}catch(_){}const menuPanel=$('menuPanel');if(menuPanel){menuPanel.classList.add('hidden');document.body.classList.remove('more-open')}ensureTwcrmHistory();setupWorkspaceRealtime();render();setBottomNav('dashboard');maybeAutoCheckIn();
   if(localStorage.getItem('twcrm_lock_enabled')==='1'&&localStorage.getItem('twcrm_lock_pin'))lockApp();
  }catch(err){
   user=null;currentProfile=null;setStatus('Database error');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('out').classList.add('hidden');
