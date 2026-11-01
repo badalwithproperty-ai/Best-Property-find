@@ -44,10 +44,7 @@ function persist(action,detail){
 }
 async function saveAdminConsoleToCloud(){
  if(!adminSupabase||!adminOwnerId||!adminAuthorized)return;
- const {data:row,error:readError}=await adminSupabase.from('workspace_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
- if(readError)throw readError;
- const merged={...(row?.data||{}),adminConsole:data};
- const {error}=await adminSupabase.from('workspace_state').upsert({owner_id:adminOwnerId,data:merged,updated_at:new Date().toISOString()},{onConflict:'owner_id'});
+ const {error}=await adminSupabase.from('admin_console_state').upsert({owner_id:adminOwnerId,data,updated_at:new Date().toISOString()},{onConflict:'owner_id'});
  if(error)throw error;
 }
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
@@ -225,10 +222,10 @@ async function initializeAdminConsole(){
   if(profileError)throw profileError;
   if(!profile||profile.workspace_owner_id!==session.user.id){adminAuthorized=false;render();return;}
   adminOwnerId=session.user.id;adminAuthorized=true;
-  const {data:row,error:rowError}=await adminSupabase.from('workspace_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
+  const {data:row,error:rowError}=await adminSupabase.from('admin_console_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
   if(rowError)throw rowError;
-  if(row?.data?.adminConsole&&typeof row.data.adminConsole==='object'){
-   data={...emptyAdminData(),...row.data.adminConsole};
+  if(row?.data&&typeof row.data==='object'){
+   data={...emptyAdminData(),...row.data};
   }else{
    await saveAdminConsoleToCloud();
   }
