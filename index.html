@@ -837,8 +837,10 @@ async function load(authUser){
      return;
     }
     workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;isTeamLeader=String(referralProfile.designation||'').toLowerCase()==='team leader';
-   }else{
+   }else if(referralProfile.approval_status==='approved'&&String(referralProfile.designation||'').toLowerCase()==='main admin'){
     workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
+   }else{
+    workspaceOwnerId=authUser.id;isWorkspaceOwner=false;
    }
   }
   if(meta.workspace_owner_id){workspaceOwnerId=meta.workspace_owner_id;isWorkspaceOwner=false;}
