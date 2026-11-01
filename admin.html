@@ -218,9 +218,9 @@ async function initializeAdminConsole(){
   if(sessionError)throw sessionError;
   const session=sessionData.session;
   if(!session){adminAuthorized=false;render();return;}
-  const {data:profile,error:profileError}=await adminSupabase.from('member_profiles').select('user_id,workspace_owner_id').eq('user_id',session.user.id).maybeSingle();
+  const {data:profile,error:profileError}=await adminSupabase.from('member_profiles').select('user_id,workspace_owner_id,designation,approval_status').eq('user_id',session.user.id).maybeSingle();
   if(profileError)throw profileError;
-  if(!profile||profile.workspace_owner_id!==session.user.id){adminAuthorized=false;render();return;}
+  if(!profile||profile.workspace_owner_id!==session.user.id||profile.approval_status!=='approved'||String(profile.designation||'').toLowerCase()!=='main admin'){adminAuthorized=false;render();return;}
   adminOwnerId=session.user.id;adminAuthorized=true;
   const {data:row,error:rowError}=await adminSupabase.from('admin_console_state').select('data').eq('owner_id',adminOwnerId).maybeSingle();
   if(rowError)throw rowError;
