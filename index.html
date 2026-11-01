@@ -466,7 +466,7 @@ body.referral-register #legacyLogin{display:none!important}
     </div>
     <form id="referralForm" class="hidden">
       <div id="refLoginFields">
-        <div class="field"><label>6-digit Referral ID</label><input id="refLoginId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="username" placeholder="e.g. 123456"></div>
+        <div class="field"><label>Email address or Referral ID</label><input id="refLoginId" type="text" autocomplete="username" placeholder="name@example.com or 123456"></div>
         <div class="field"><label>Password</label><input id="refLoginPassword" type="password" minlength="8" autocomplete="current-password"></div>
       </div>
       <div id="refRegisterFields" class="hidden">
@@ -655,7 +655,7 @@ $('referralForm').addEventListener('submit',async e=>{
  authBusy=true;$('refSubmit').disabled=true;
  try{
   if(referralMode==='login'){
-   const result=await referralApi({action:'login',referral_id:($('refLoginId')?.value??'').trim(),password:($('refLoginPassword')?.value??'')});
+   const result=await referralApi({action:'login',email_or_referral_id:($('refLoginId')?.value??'').trim(),password:($('refLoginPassword')?.value??'')});
    if(!sb)throw new Error('Supabase connection तैयार नहीं है। Refresh करें।');
    const {error}=await sb.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});
    if(error)throw error;
@@ -666,7 +666,7 @@ $('referralForm').addEventListener('submit',async e=>{
    if(!email||!/^\\S+@\\S+\\.\\S+$/.test(email))throw new Error('Valid email address भरें।');
    if(!/^\\+?\\d{10,15}$/.test(phone))throw new Error('सही मोबाइल नंबर भरें।');
    const result=await referralApi({action:'register',full_name:($('refFullName')?.value??'').trim(),email,phone,designation:($('refDesignation')?.value??''),sponsor_referral_id:($('sponsorReferralId')?.value??'').trim(),password:($('refRegisterPassword')?.value??'')});
-   referralMessage('Registration सफल! आपका Referral ID: '+result.referral_id+'। अब Main Admin की approval का इंतज़ार करें। SMS OTP की जरूरत नहीं है।');
+   referralMessage('Registration सफल! आपका Referral ID: '+result.referral_id+'। Login के लिए अपना Email और Password इस्तेमाल करें। Main Admin approval के बाद access मिलेगा। SMS OTP की जरूरत नहीं है।');
    $('referralForm').reset();
    setReferralMode('login');
   }
