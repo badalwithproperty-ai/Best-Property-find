@@ -470,9 +470,9 @@ body.referral-register #legacyLogin{display:none!important}
         <div class="field"><label>Password</label><input id="refLoginPassword" type="password" minlength="8" autocomplete="current-password"></div>
       </div>
       <div id="refRegisterFields" class="hidden">
-        <div class="field"><label>Full name</label><input id="refFullName" autocomplete="name" required></div>
-        <div class="field"><label>Email address</label><input id="refEmail" type="email" autocomplete="email" placeholder="name@example.com" required></div>
-        <div class="field"><label>Mobile number</label><input id="refPhone" type="tel" autocomplete="tel" placeholder="9876543210" required></div>
+        <div class="field"><label>Full name</label><input id="refFullName" autocomplete="name"></div>
+        <div class="field"><label>Email address</label><input id="refEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
+        <div class="field"><label>Mobile number</label><input id="refPhone" type="tel" autocomplete="tel" placeholder="9876543210"></div>
         <div class="field"><label>Designation</label><select id="refDesignation"><option value="Associate">Associate</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Other</option></select></div>
         <div class="field"><label>Sponsor's 6-digit Referral ID</label><input id="sponsorReferralId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Referral ID of the person who invited you"></div>
         <div class="field"><label>Create password (minimum 8 characters)</label><input id="refRegisterPassword" type="password" minlength="8" autocomplete="new-password"></div>
@@ -663,6 +663,8 @@ $('referralForm').addEventListener('submit',async e=>{
   }else{
    const email=($('refEmail')?.value??'').trim().toLowerCase();
    const phone=($('refPhone')?.value??'').trim().replace(/[\\s()-]/g,'');
+   if(!email||!/^\\S+@\\S+\\.\\S+$/.test(email))throw new Error('Valid email address भरें।');
+   if(!/^\\+?\\d{10,15}$/.test(phone))throw new Error('सही मोबाइल नंबर भरें।');
    const result=await referralApi({action:'register',full_name:($('refFullName')?.value??'').trim(),email,phone,designation:($('refDesignation')?.value??''),sponsor_referral_id:($('sponsorReferralId')?.value??'').trim(),password:($('refRegisterPassword')?.value??'')});
    referralMessage('Registration सफल! आपका Referral ID: '+result.referral_id+'। अब Main Admin की approval का इंतज़ार करें। SMS OTP की जरूरत नहीं है।');
    $('referralForm').reset();
