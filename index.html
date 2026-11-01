@@ -470,16 +470,14 @@ body.referral-register #legacyLogin{display:none!important}
         <div class="field"><label>Password</label><input id="refLoginPassword" type="password" minlength="8" autocomplete="current-password"></div>
       </div>
       <div id="refRegisterFields" class="hidden">
-        <div class="field"><label>Full name</label><input id="refFullName" autocomplete="name"></div>
-        <div class="field"><label>Mobile number (with country code)</label><input id="refPhone" type="tel" autocomplete="tel" placeholder="+919876543210"></div>
+        <div class="field"><label>Full name</label><input id="refFullName" autocomplete="name" required></div>
+        <div class="field"><label>Email address</label><input id="refEmail" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+        <div class="field"><label>Mobile number</label><input id="refPhone" type="tel" autocomplete="tel" placeholder="9876543210" required></div>
         <div class="field"><label>Designation</label><select id="refDesignation"><option value="Associate">Associate</option><option>Sales Executive</option><option>Senior Sales Executive</option><option>Team Leader</option><option>Sales Manager</option><option>Other</option></select></div>
         <div class="field"><label>Sponsor's 6-digit Referral ID</label><input id="sponsorReferralId" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Referral ID of the person who invited you"></div>
         <div class="field"><label>Create password (minimum 8 characters)</label><input id="refRegisterPassword" type="password" minlength="8" autocomplete="new-password"></div>
       </div>
-      <div id="otpFields" class="hidden">
-        <div class="field"><label>SMS OTP</label><input id="refOtp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter OTP"></div>
-      </div>
-      <div class="actions"><button id="refSubmit" type="submit">Login</button><button id="sendLoginOtpBtn" type="button" class="secondary" onclick="sendReferralLoginOtp()">Login with SMS OTP</button><button id="verifyOtpBtn" type="button" class="secondary hidden" onclick="verifyReferralOtp()">Verify OTP</button></div>
+      <div class="actions"><button id="refSubmit" type="submit">Login</button></div>
     </form>
     <div id="refMsg" class="msg hidden" role="status" aria-live="polite"></div>
     <div id="legacyLogin">
@@ -621,8 +619,8 @@ function setReferralMode(next){
  $('legacyLogin').style.display='';
  $('refLoginFields').classList.toggle('hidden',next!=='login');
  $('refRegisterFields').classList.toggle('hidden',next!=='register');
- $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
- $('refSubmit').classList.remove('hidden');$('refSubmit').textContent=next==='login'?'Login':'Send SMS OTP & Register';
+ $('otpFields')?.classList.add('hidden');$('verifyOtpBtn')?.classList.add('hidden');
+ $('refSubmit').classList.remove('hidden');$('refSubmit').textContent=next==='login'?'Login':'Create Account';
  $('refLoginTab').classList.toggle('secondary',next!=='login');
  $('refRegisterTab').classList.toggle('secondary',next!=='register');
  $('refMsg').classList.add('hidden');
@@ -663,44 +661,16 @@ $('referralForm').addEventListener('submit',async e=>{
    if(error)throw error;
    await load(result.user);
   }else{
-   const phone=($('refPhone')?.value??'').trim().replace(/[\s()-]/g,'');
-   const result=await referralApi({action:'register',full_name:($('refFullName')?.value??'').trim(),phone,designation:($('refDesignation')?.value??''),sponsor_referral_id:($('sponsorReferralId')?.value??'').trim(),password:($('refRegisterPassword')?.value??'')});
-   pendingReferralPhone=phone;
-   $('otpFields').classList.remove('hidden');$('verifyOtpBtn').classList.remove('hidden');
-   $('refSubmit').classList.add('hidden');
-   referralMessage('SMS OTP भेजने का अनुरोध सफल हुआ। आपका Referral ID: '+result.referral_id+' — इसे सुरक्षित रखें। अब OTP verify करें।');
+   const email=($('refEmail')?.value??'').trim().toLowerCase();
+   const phone=($('refPhone')?.value??'').trim().replace(/[\\s()-]/g,'');
+   const result=await referralApi({action:'register',full_name:($('refFullName')?.value??'').trim(),email,phone,designation:($('refDesignation')?.value??''),sponsor_referral_id:($('sponsorReferralId')?.value??'').trim(),password:($('refRegisterPassword')?.value??'')});
+   referralMessage('Registration सफल! आपका Referral ID: '+result.referral_id+'। अब Main Admin की approval का इंतज़ार करें। SMS OTP की जरूरत नहीं है।');
+   $('referralForm').reset();
+   setReferralMode('login');
   }
  }catch(err){referralMessage(err.message||'Request failed',true)}
  finally{authBusy=false;$('refSubmit').disabled=false}
 });
-async function sendReferralLoginOtp(){
- if(authBusy)return;
- const referralId=($('refLoginId')?.value??'').trim();
- if(!/^\d{6}$/.test(referralId)){referralMessage('पहले 6-digit Referral ID भरें।',true);return}
- authBusy=true;$('sendLoginOtpBtn').disabled=true;
- try{
-  const result=await referralApi({action:'send_login_otp',referral_id:referralId});
-  loginOtpMode=true;
-  $('otpFields').classList.remove('hidden');$('verifyOtpBtn').classList.remove('hidden');
-  $('refSubmit').classList.add('hidden');$('sendLoginOtpBtn').classList.add('hidden');
-  $('refOtp').value='';
-  referralMessage(result.message+' OTP डालकर Verify OTP दबाएँ।');
- }catch(err){referralMessage(err.message||'OTP भेजने में समस्या हुई।',true)}
- finally{authBusy=false;$('sendLoginOtpBtn').disabled=false}
-}
-async function verifyReferralOtp(){
- if(authBusy)return;
- const phone=pendingReferralPhone||($('refPhone')?.value??'').trim().replace(/[\s()-]/g,'');
- authBusy=true;$('verifyOtpBtn').disabled=true;
- try{
-  const result=loginOtpMode ? await referralApi({action:'verify_login_otp',referral_id:($('refLoginId')?.value??'').trim(),token:($('refOtp')?.value??'').trim()}) : await referralApi({action:'verify_otp',phone,token:($('refOtp')?.value??'').trim()});
-  if(loginOtpMode){if(!sb)throw new Error('Supabase connection तैयार नहीं है। Refresh करें।');const {error}=await sb.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});if(error)throw error;await load(result.user);return;}
-  referralMessage('Mobile verify हो गया। Referral ID: '+result.referral_id+'. Main Admin approval का इंतज़ार करें; approval से पहले CRM access नहीं मिलेगा।');
-  $('otpFields').classList.add('hidden');$('verifyOtpBtn').classList.add('hidden');
-  $('refSubmit').classList.remove('hidden');setReferralMode('login');
- }catch(err){referralMessage(err.message||'OTP verification failed',true)}
- finally{authBusy=false;$('verifyOtpBtn').disabled=false}
-}
 
 function toggleMode(){
  if(authBusy)return;
