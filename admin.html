@@ -120,21 +120,30 @@ async function loadRegisteredMembers(){
   const {data:profiles,error}=await adminSupabase.from('member_profiles').select('user_id,full_name,phone,referral_id,designation,approval_status,created_at').eq('workspace_owner_id',session.user.id).neq('user_id',session.user.id).order('created_at',{ascending:false});
   if(error)throw error;
   if(!profiles||!profiles.length){target.innerHTML='<div class="empty">इस लॉगिन के workspace में अभी कोई registered member नहीं मिला। अगर रजिस्ट्रेशन किसी दूसरे workspace owner से जुड़ा है, तो उसी admin account से लॉगिन करें।</div>';return;}
-  target.innerHTML='<div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Referral ID</th><th>Designation</th><th>Approval</th><th>Registered</th><th>Action</th></tr></thead><tbody>'+profiles.map(p=>'<tr><td>'+escapeHtml(p.full_name)+'</td><td>'+escapeHtml(p.phone)+'</td><td><strong>'+escapeHtml(p.referral_id)+'</strong></td><td>'+escapeHtml(p.designation)+'</td><td>'+pill(String(p.approval_status||'pending').replace(/^./,c=>c.toUpperCase()))+'</td><td>'+escapeHtml(p.created_at?new Date(p.created_at).toLocaleString():'—')+'</td><td><div class="headactions"><button onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'approved\')">Approve</button><button class="secondary" onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'rejected\')">Reject</button><button class="dang" onclick="removeMemberProfile(\''+escapeHtml(p.user_id)+'\',\''+escapeHtml(p.full_name)+'\')">Remove</button></div></td></tr>').join('')+'</tbody></table></div><div class="notice" style="margin-top:12px">Remove सदस्य की referral/profile entry हटाता है; यह Supabase Authentication से login account को delete नहीं करता।</div>';
+  target.innerHTML='<div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Referral ID</th><th>Designation</th><th>Approval</th><th>Registered</th><th>Action</th></tr></thead><tbody>'+profiles.map(p=>'<tr><td>'+escapeHtml(p.full_name)+'</td><td>'+escapeHtml(p.phone)+'</td><td><strong>'+escapeHtml(p.referral_id)+'</strong></td><td>'+escapeHtml(p.designation)+'</td><td>'+pill(String(p.approval_status||'pending').replace(/^./,c=>c.toUpperCase()))+'</td><td>'+escapeHtml(p.created_at?new Date(p.created_at).toLocaleString():'—')+'</td><td><div class="headactions"><button onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'approved\')">Approve</button><button class="secondary" onclick="changeMemberStatus(\''+escapeHtml(p.user_id)+'\',\'rejected\')">Reject</button>'+(p.approval_status==='approved'&&p.designation!=='Main Admin'?'<button class="gold" data-uid="'+escapeHtml(p.user_id)+'" data-role="'+(p.designation==='Co-Admin'?'associate':'co_admin')+'" onclick="setMemberRole(this.dataset.uid,this.dataset.role)">'+(p.designation==='Co-Admin'?'Remove Co-Admin':'Make Co-Admin')+'</button>':'')+'<button class="dang" onclick="removeMemberProfile(\''+escapeHtml(p.user_id)+'\',\''+escapeHtml(p.full_name)+'\')">Remove</button></div></td></tr>').join('')+'</tbody></table></div><div class="notice" style="margin-top:12px">Remove सदस्य की referral/profile entry हटाता है; यह Supabase Authentication से login account को delete नहीं करता।</div>';
  }catch(err){target.innerHTML='<div class="notice">Supabase से सदस्य सूची नहीं आ सकी: '+escapeHtml(err.message||String(err))+'<br>यह लॉगिन/permission (RLS) या database connection की समस्या हो सकती है।</div>';}
 }
-async function callReferralAdminAction(action,userId){
+async function callReferralAdminAction(action,userId,role){
  const {data:sessionData,error:sessionError}=await adminSupabase.auth.getSession();
  if(sessionError)throw sessionError;
  const session=sessionData.session;if(!session)throw new Error('पहले मुख्य ऐप में लॉगिन करें।');
  const response=await fetch(ADMIN_SUPABASE_URL+'/functions/v1/referral-auth',{
   method:'POST',
   headers:{'Content-Type':'application/json','apikey':ADMIN_SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
-  body:JSON.stringify({action,user_id:userId})
+  body:JSON.stringify({action,user_id:userId,role})
  });
  const result=await response.json().catch(()=>({error:'Server response पढ़ा नहीं जा सका।'}));
  if(!response.ok)throw new Error(result.error||'Action failed ('+response.status+')');
  return result;
+}
+async function setMemberRole(userId,role){
+ const label=role==='co_admin'?'Make this member Co-Admin':'Remove Co-Admin access';
+ if(!confirm(label+'? Co-Admin can manage the full CRM but cannot open Main Admin Panel.'))return;
+ try{
+  const result=await callReferralAdminAction('set_role',userId,role);
+  alert(result.designation+' access updated.');
+  await loadRegisteredMembers();
+ }catch(err){alert('Role update failed: '+(err.message||String(err)));}
 }
 async function changeMemberStatus(userId,status){
  const action=status==='approved'?'approve':'reject';
