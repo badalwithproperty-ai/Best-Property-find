@@ -533,7 +533,7 @@ const RESTORABLE_PAGES=['dashboard','customers','tasks','reports','inventory','a
 let sb=null,user=null,mode='login',page=(()=>{try{const saved=localStorage.getItem('twcrm_last_page');return RESTORABLE_PAGES.includes(saved)?saved:'dashboard'}catch(_){return 'dashboard'}})();
 // Compatibility alias for older dashboard fragments; always set from the active session.
 let currentProfile=null;
-let workspaceOwnerId=null,isWorkspaceOwner=false,isTeamLeader=false,teamMembers=[];
+let workspaceOwnerId=null,isWorkspaceOwner=false,isTeamLeader=false,isCoAdmin=false,teamMembers=[];
 let authBusy=false,loading=false,saveBusy=false,workspaceRealtimeChannel=null;
 let db={customers:[],inventory:[],associates:[],activities:[]};
 let workspaceExtras={};
@@ -778,7 +778,7 @@ function setupWorkspaceRealtime(){
 
 async function load(authUser){
  if(!sb||!authUser||loading)return;
- loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=false;isTeamLeader=false;teamMembers=[];setStatus('Connecting to cloud...');
+ loading=true;user=authUser;currentProfile=authUser;workspaceOwnerId=authUser.id;isWorkspaceOwner=false;isTeamLeader=false;isCoAdmin=false;teamMembers=[];setStatus('Connecting to cloud...');
  try{
   const meta=authUser.user_metadata||{};
   // Do not treat a referral account as a Main Admin just because it lacks legacy email-signup metadata.
@@ -808,7 +808,7 @@ async function load(authUser){
      message('आपका account approved है, लेकिन Admin workspace access लिंक नहीं हुआ है। Admin से दोबारा approval जाँचने को कहें।');
      return;
     }
-    workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;isTeamLeader=String(referralProfile.designation||'').toLowerCase()==='team leader';
+    workspaceOwnerId=referralProfile.workspace_owner_id;isWorkspaceOwner=false;isTeamLeader=String(referralProfile.designation||'').toLowerCase()==='team leader';isCoAdmin=linkedMembership.role==='co_admin';
    }else if(referralProfile.approval_status==='approved'&&String(referralProfile.designation||'').toLowerCase()==='main admin'){
     workspaceOwnerId=authUser.id;isWorkspaceOwner=true;
    }else{
@@ -851,16 +851,16 @@ async function load(authUser){
   delete saved.customers;
   workspaceExtras={...saved};
   ['customers','inventory','associates','activities','projects','tasks','attendance'].forEach(k=>delete workspaceExtras[k]);
-  if(isWorkspaceOwner){
+  if(isWorkspaceOwner||isCoAdmin){
    const {data:members,error:membersError}=await withTimeout(sb.from('workspace_members').select('workspace_owner_id,member_user_id,role,created_at').eq('workspace_owner_id',authUser.id),'Team members load');
    if(!membersError)teamMembers=members||[];
   }
-  const profileQuery=isWorkspaceOwner?sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId):sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId).eq('sponsor_user_id',authUser.id);
+  const profileQuery=(isWorkspaceOwner||isCoAdmin)?sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId):sb.from('member_profiles').select('user_id,full_name,designation,approval_status').eq('workspace_owner_id',workspaceOwnerId).eq('sponsor_user_id',authUser.id);
   const {data:assignableProfiles,error:assignableProfilesError}=await withTimeout(profileQuery,'Assignable team members load');
   if(assignableProfilesError)throw assignableProfilesError;
   const profileById=new Map((assignableProfiles||[]).map(p=>[p.user_id,p]));
   teamMembers=(teamMembers||[]).map(m=>({...m,...(profileById.get(m.member_user_id)||{})}));
-  if(!isWorkspaceOwner)teamMembers=(assignableProfiles||[]).filter(p=>p.approval_status==='approved').map(p=>({member_user_id:p.user_id,name:p.full_name,full_name:p.full_name,role:p.designation}));
+  if(!isWorkspaceOwner&&!isCoAdmin)teamMembers=(assignableProfiles||[]).filter(p=>p.approval_status==='approved').map(p=>({member_user_id:p.user_id,name:p.full_name,full_name:p.full_name,role:p.designation}));
   const {data:secureLeadRows,error:secureLeadError}=await withTimeout(sb.from('team_leads').select('id,workspace_owner_id,assigned_to,assigned_by,lead_data,created_at,updated_at').eq('workspace_owner_id',workspaceOwnerId),'Secure lead assignments load');
   if(secureLeadError)throw secureLeadError;
   const secureCustomers=(secureLeadRows||[]).map(r=>({...((r.lead_data&&typeof r.lead_data==='object')?r.lead_data:{}),id:r.id,_assignedTo:r.assigned_to,assignedTo:r.assigned_to,_assignedBy:r.assigned_by}));
@@ -1015,7 +1015,7 @@ function renderTeamWorkspace(c){
 
 async function renderTeamAccess(c){
  if(!user||!sb){c.innerHTML='<div class="panel">Please login again.</div>';return;}
- if(!isWorkspaceOwner&&!isTeamLeader){c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Team Access केवल Main Admin और Team Leader के लिए है।</p></div>';return;}
+ if(!isWorkspaceOwner&&!isCoAdmin&&!isTeamLeader){c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Team Access केवल Main Admin, Co-Admin और Team Leader के लिए है।</p></div>';return;}
  c.innerHTML='<div class="panel"><h2>Team Registration</h2><p class="muted">Loading registration requests…</p></div>';
  let query=sb.from('team_join_requests').select('*').eq('workspace_owner_id',workspaceOwnerId).order('created_at',{ascending:false});
  if(isTeamLeader)query=query.eq('sponsor_user_id',user.id);
