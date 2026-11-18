@@ -34,6 +34,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
             .filter(m => !/\bsrc\s*=/.test(m[1]))
+            .filter(m => !/\btype\s*=\s*["']application\/ld\+json["']/i.test(m[1]))
             .map(m => m[2]);
           if (!scripts.length) throw new Error('No inline JavaScript blocks found');
           scripts.forEach((source, i) => {
