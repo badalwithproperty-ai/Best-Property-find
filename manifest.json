@@ -1,7 +1,7 @@
 {
   "name": "Team Work CRM",
   "short_name": "Team Work CRM",
-  "description": "Team collaboration, real estate leads, follow-ups and sales reports",
+  "description": "TEAM WORK Real Estate CRM for property leads, plot and flat inventory, follow-ups and sales team management",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
